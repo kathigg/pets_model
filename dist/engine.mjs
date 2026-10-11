@@ -170,9 +170,10 @@ export function inferProfile(message) {
   else if (has(s, /\b(publish|release|dashboard|statistics|aggregate|counts|report)\w*\b/)) p.goal = 'statistics';
   else if (has(s, /\b(access|analy[sz]e|research|enclave)\w*\b.*\b(protected|sensitive|student|record|data)\w*\b/)) p.goal = 'access';
 
-  if (has(s, /\b(three|3|four|4|multiple|several)\s+(agenc|organization|holder|party|department)\w*\b/)) p.holders = 'many';
-  else if (has(s, /\b(two|2)\s+(agenc|organization|holder|party|department)\w*\b/)) p.holders = 'two';
-  else if (has(s, /\b(one|1|single)\s+(agenc|organization|holder|party|department)\w*\b/)) p.holders = 'one';
+  const holderWords = '(?:(?:education|state|local|school|public|research|participating|partner|government|data|separate)\\s+){0,2}(?:agenc|organization|holder|party|department)\\w*\\b';
+  if (has(s, new RegExp(`\\b(?:three|3|four|4|multiple|several)\\s+${holderWords}`))) p.holders = 'many';
+  else if (has(s, new RegExp(`\\b(?:two|2)\\s+${holderWords}`))) p.holders = 'two';
+  else if (has(s, new RegExp(`\\b(?:one|1|single)\\s+${holderWords}`))) p.holders = 'one';
   if (has(s, /\b(?:raw|row.level|source|individual)?\s*(?:student\s+)?(?:data|records|identifiers)\b.{0,25}\b(?:cannot|can't|may not|must not|won't|do not)\s+(?:move|be shared|be transferred|leave)\b/) || has(s, /\b(?:cannot|can't|may not|must not|won't|do not)\b.{0,25}\b(?:move|share|transfer)\s+(?:raw|row.level|source|individual)?\s*(?:student\s+)?(?:data|records|identifiers)\b/) || has(s, /\b(?:raw\s+)?(?:data|records|identifiers)\b.{0,20}\bstay local\b/)) p.rawMove = 'no';
   else if (has(s, /\b(?:raw|row.level|source|individual)\s+(?:student\s+)?(?:data|records|identifiers)\b.{0,25}\b(?:can|may|are allowed to)\s+(?:move|be shared|be transferred|leave)\b/) || has(s, /\b(?:can|may|allowed to)\b.{0,25}\b(?:move|share|transfer)\s+(?:raw|row.level|source|individual)\s+(?:student\s+)?(?:data|records|identifiers)\b/)) p.rawMove = 'yes';
   if (has(s, /\b(fuzzy|probabilistic|approximate|misspell|no universal id|no common id)\b/)) p.match = 'fuzzy';

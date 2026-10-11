@@ -6,8 +6,8 @@ Hosted demo: [PETs Model](https://pets-model.fluffy-buddy-4572.chatgpt.site). It
 
 ## What works now
 
-- Conversational entry points for **understanding PETs**, **choosing an approach**, and **planning implementation**.
-- Structured case intake for data holders, movement, exact versus approximate linkage, controlled row access, released outputs, repeated analyses, sensitivity, technical capacity, and review of authority.
+- One chat for **understanding PETs**, **exploring a use case**, and **planning a pilot**, with short answers and more detail on demand.
+- In-chat questions and editable case details for data holders, movement, exact versus approximate linkage, controlled row access, released outputs, repeated analyses, sensitivity, technical capacity, and review of authority.
 - Multi-PET suggestions with rationale, caveats, alternatives, counterindications, a rule trace, and the next clarifying question.
 - A local retrieval index of 47 reviewed, original paraphrased passages from public MDI reports and pages, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed research. Informational answers link to the retrieved passages; architecture cards link to sources selected for each rule.
 - A clear escalation path for unreviewed authority, direct-identifier release, protected row-level release, and legal questions. Unknown case details stay unknown.

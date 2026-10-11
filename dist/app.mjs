@@ -1,47 +1,59 @@
-import { FIELDS, PETS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel } from './engine.mjs';
+import { FIELDS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel } from './engine.mjs';
 import { createIndex, retrieve, evidenceFor } from './retrieval.mjs';
 
-const $ = (selector) => document.querySelector(selector);
-const el = (tag, className, text) => {
+const $ = selector => document.querySelector(selector);
+const el = (tag, className = '', text) => {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
 };
-const state = { index: createIndex([]), profile: {}, evidence: [], transcript: [], mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '' };
+const state = {
+  index: createIndex([]), profile: {}, evidence: [], transcript: [],
+  mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '', pendingQuestion: null
+};
 const messages = $('#messages');
 
 function safeLink(url, label, className = '') {
-  const a = el('a', className, label);
+  const link = el('a', className, label);
   if (/^https:\/\//.test(url || '')) {
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
   }
-  return a;
+  return link;
+}
+
+function collapseEarlierRecommendations() {
+  messages.querySelectorAll('.answer.is-recommendation:not(.is-collapsed)').forEach(answer => {
+    const details = el('details', 'prior-answer');
+    const content = el('div', 'prior-answer-content');
+    content.append(...answer.childNodes);
+    details.append(el('summary', '', 'Earlier recommendation'), content);
+    answer.replaceChildren(details);
+    answer.classList.add('is-collapsed');
+  });
 }
 
 function addMessage(kind, content) {
-  messages.querySelectorAll('.choice:not([disabled])').forEach(button => { button.disabled = true; });
+  messages.querySelectorAll('.choice:not([disabled]), .case-field select:not([disabled])')
+    .forEach(control => { control.disabled = true; });
+  if (kind === 'assistant') collapseEarlierRecommendations();
   const row = el('div', `message-row ${kind}`);
   const avatar = el('div', 'avatar', kind === 'assistant' ? '✳' : 'You');
+  avatar.setAttribute('aria-hidden', 'true');
   const bubble = el('div', 'bubble');
   if (typeof content === 'string') bubble.textContent = content;
   else bubble.append(content);
   row.append(avatar, bubble);
   messages.append(row);
+  document.body.classList.add('has-messages');
   state.transcript.push({
     role: kind,
     text: (bubble.innerText || bubble.textContent || '').trim(),
     sources: kind === 'assistant' ? state.evidence.map(hit => ({ title: hit.document.title, url: hit.document.url })) : []
   });
   row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  return bubble;
-}
-
-function setMode(mode) {
-  state.mode = mode;
-  document.querySelectorAll('.rail-action').forEach(button => button.classList.toggle('active', button.dataset.starter === mode));
 }
 
 function setSourceStatus(status) {
@@ -49,241 +61,201 @@ function setSourceStatus(status) {
   const unavailable = status !== 'ready';
   $('#prompt').disabled = unavailable;
   $('#composer button[type="submit"]').disabled = unavailable;
-  $('#assess').disabled = unavailable;
   $('#export').disabled = unavailable;
-  document.querySelectorAll('[data-prompt], [data-starter="plan"]').forEach(button => { button.disabled = unavailable; });
+  document.querySelectorAll('[data-prompt]').forEach(button => { button.disabled = unavailable; });
 }
 
-function switchPanel(which) {
-  const isCase = which === 'case';
-  $('#tab-case').setAttribute('aria-selected', String(isCase));
-  $('#tab-evidence').setAttribute('aria-selected', String(!isCase));
-  $('#tab-case').tabIndex = isCase ? 0 : -1;
-  $('#tab-evidence').tabIndex = isCase ? -1 : 0;
-  $('#panel-case').hidden = !isCase;
-  $('#panel-evidence').hidden = isCase;
+function sourceDetails(hits, extra) {
+  const details = el('details', 'answer-details');
+  details.append(el('summary', '', extra ? 'Why and sources' : 'Sources'));
+  const content = el('div', 'answer-detail-content');
+  if (extra) content.append(extra);
+  const unique = hits.filter((hit, i) => hits.findIndex(x => x.document.url === hit.document.url) === i);
+  if (unique.length) {
+    const list = el('ul', 'source-links');
+    unique.slice(0, 5).forEach(({ document: doc }) => {
+      const item = el('li');
+      item.append(safeLink(doc.url, `${doc.title} ↗`, 'citation'));
+      list.append(item);
+    });
+    content.append(list);
+  } else content.append(el('p', '', 'No close public source matched this question.'));
+  details.append(content);
+  return details;
 }
 
-function renderFields() {
-  const container = $('#field-list');
-  container.replaceChildren();
-  const basic = ['goal', 'holders', 'rawMove', 'match', 'output'];
-  const advanced = ['rowAccess', 'directRelease', 'repeated', 'sensitivity', 'capacity', 'authority'];
-  const createField = (key) => {
-    const field = FIELDS[key];
+function caseDetails() {
+  const details = el('details', 'answer-details case-details');
+  details.append(el('summary', '', 'Case details'));
+  const editor = el('div', 'case-editor');
+  for (const [key, field] of Object.entries(FIELDS)) {
     const label = el('label', 'case-field');
     label.append(el('span', 'field-label', field.label));
     const select = el('select');
     select.name = key;
-    const placeholder = el('option', '', 'Select an answer');
+    const placeholder = el('option', '', 'Not answered');
     placeholder.value = '';
     select.append(placeholder);
-    for (const [value, text] of field.options) {
-      const option = el('option', '', text);
+    field.options.forEach(([value, name]) => {
+      const option = el('option', '', name);
       option.value = value;
       select.append(option);
-    }
+    });
     select.value = state.profile[key] || '';
     select.addEventListener('change', () => {
       if (select.value) state.profile[key] = select.value;
       else delete state.profile[key];
-      updateProgress();
+      state.pendingQuestion = null;
+      const answer = select.value ? profileLabel(key, select.value) : 'Not answered';
+      addMessage('user', `${field.label} ${answer}`);
+      showRecommendation(`Case detail: ${field.label} ${answer}`);
     });
     label.append(select);
-    return label;
-  };
-  basic.forEach(key => container.append(createField(key)));
-  const details = el('details', 'advanced-fields');
-  const summary = el('summary', '', 'More details that improve the result');
-  details.append(summary);
-  advanced.forEach(key => details.append(createField(key)));
-  container.append(details);
-  updateProgress();
-}
-
-function updateProgress() {
-  const result = assessCase(state.profile);
-  $('#progress-label').textContent = `${result.completeness}%`;
-  $('#progress-bar').style.width = `${result.completeness}%`;
-}
-
-function renderEvidence(hits) {
-  state.evidence = hits;
-  $('#evidence-count').textContent = `${hits.length} source${hits.length === 1 ? '' : 's'}`;
-  const list = $('#evidence-list');
-  list.replaceChildren();
-  if (!hits.length) {
-    list.append(el('p', 'empty-evidence', 'No reviewed public source matched this question. Try a more specific PET or use case.'));
-    return;
+    editor.append(label);
   }
-  hits.forEach((hit, i) => {
-    const d = hit.document;
-    const card = el('article', 'source-card');
-    card.append(el('span', 'source-number', String(i + 1).padStart(2, '0')));
-    card.append(safeLink(d.url, d.title, 'source-title'));
-    card.append(el('p', 'source-meta', `${d.publisher}${d.year ? ` · ${d.year}` : ''}${d.section ? ` · ${d.section}` : ''}${d.page ? ` · p. ${d.page}` : ''} · reviewed ${d.reviewed_at}`));
-    card.append(el('p', 'source-text', d.text));
-    list.append(card);
+  details.append(editor);
+  return details;
+}
+
+function reasons(result) {
+  const content = el('div', 'answer-reasons');
+  const choices = [...result.primary, ...result.complementary, ...result.alternatives];
+  if (choices.length) {
+    const list = el('ul');
+    choices.forEach(entry => {
+      const item = el('li');
+      item.append(el('strong', '', entry.name), document.createTextNode(` — ${entry.reason} Check: ${entry.caveat}`));
+      list.append(item);
+    });
+    content.append(list);
+  }
+  if (result.avoid.length) {
+    const list = el('ul');
+    result.avoid.forEach(item => list.append(el('li', '', item.reason)));
+    content.append(el('strong', '', 'Watch for'), list);
+  }
+  content.append(el('p', 'review-note', 'Review the design with privacy and PET specialists before use.'));
+  return content;
+}
+
+function followupQuestion(question) {
+  const follow = el('div', 'followup');
+  follow.append(el('p', 'followup-question', question.text));
+  const choices = el('div', 'choice-list');
+  FIELDS[question.field].options.forEach(([value, label]) => {
+    const button = el('button', 'choice', label);
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      state.profile[question.field] = value;
+      state.pendingQuestion = null;
+      addMessage('user', label);
+      showRecommendation(`Case detail: ${question.text} ${label}`);
+    });
+    choices.append(button);
   });
-}
-
-function citedSources(hits) {
-  const block = el('div', 'answer-sources');
-  block.append(el('span', 'answer-label', 'PUBLIC SOURCES'));
-  if (!hits.length) {
-    block.append(el('span', 'no-source', 'No directly matched source. Ask a narrower question.'));
-    return block;
-  }
-  const list = el('div', 'source-links');
-  const unique = hits.map((hit, i) => ({ hit, i })).filter(({ hit, i }) => hits.findIndex(x => x.document.url === hit.document.url) === i);
-  unique.slice(0, 4).forEach(({ hit }) => list.append(safeLink(hit.document.url, hit.document.publisher, 'citation')));
-  block.append(list);
-  return block;
-}
-
-function petCard(entry, number) {
-  const pet = PETS[entry.code];
-  const card = el('article', 'pet-card');
-  const header = el('div', 'pet-card-header');
-  header.append(el('span', 'pet-number', String(number).padStart(2, '0')));
-  header.append(el('span', 'pet-family', pet.family));
-  card.append(header, el('h4', '', entry.name), el('p', 'pet-reason', entry.reason));
-  card.append(el('p', 'pet-watch', `Check: ${entry.caveat}`));
-  const source = (entry.sourceIds || []).map(id => state.index.docs.find(doc => doc.id === id)).find(Boolean);
-  if (source) card.append(safeLink(source.url, 'View source ↗', 'pet-source'));
-  return card;
+  follow.append(choices);
+  return follow;
 }
 
 function recommendationMessage(result, query) {
-  const card = el('div', 'answer');
-  const status = result.status === 'escalate' ? 'Human review needed' : result.status === 'insufficient' ? 'More detail needed' : 'For expert review';
-  const heading = el('div', 'answer-top');
-  heading.append(el('span', 'answer-badge', 'ARCHITECTURE EXPLORER'), el('span', `status status-${result.status}`, status));
-  card.append(heading, el('h3', '', result.status === 'escalate' ? 'Pause for expert review' : 'A layered path to explore'), el('p', 'answer-lead', result.summary));
-
-  if (result.primary.length) {
-    card.append(el('h4', 'answer-section-title', 'Start here'));
-    const grid = el('div', 'pet-grid');
-    result.primary.forEach((entry, i) => grid.append(petCard(entry, i + 1)));
-    card.append(grid);
-  }
-  if (result.complementary.length) {
-    card.append(el('h4', 'answer-section-title', 'Add as a layer'));
-    const grid = el('div', 'pet-grid');
-    result.complementary.forEach((entry, i) => grid.append(petCard(entry, i + 1)));
-    card.append(grid);
-  }
-  if (result.alternatives.length) {
-    const alt = el('div', 'answer-alt');
-    alt.append(el('strong', '', 'Other paths to compare'));
-    result.alternatives.forEach(x => alt.append(el('p', '', `${x.name}: ${x.reason}`)));
-    card.append(alt);
-  }
-  if (result.avoid.length) {
-    const caution = el('div', 'answer-caution');
-    caution.append(el('strong', '', 'Do not assume'));
-    const ul = el('ul');
-    result.avoid.forEach(x => ul.append(el('li', '', x.reason)));
-    caution.append(ul);
-    card.append(caution);
-  }
-  const q = nextQuestion(result);
-  if (q) {
-    const follow = el('div', 'followup');
-    follow.append(el('span', 'answer-label', 'NEXT QUESTION'), el('p', '', q.text));
-    const choices = el('div', 'choice-list');
-    FIELDS[q.field].options.forEach(([value, label]) => {
-      const button = el('button', 'choice', label);
-      button.type = 'button';
-      button.addEventListener('click', () => {
-        state.profile[q.field] = value;
-        renderFields();
-        addMessage('user', `${q.text} ${label}`);
-        showRecommendation(`Use case: ${q.text} ${label}`);
-      });
-      choices.append(button);
+  const answer = el('div', 'answer is-recommendation');
+  const question = nextQuestion(result);
+  if (result.status === 'escalate') {
+    answer.append(el('h2', 'answer-title', 'Check permissions first'));
+    answer.append(el('p', 'answer-lead answer-warning', result.summary));
+  } else if (result.primary.length) {
+    answer.append(el('h2', 'answer-title', 'A possible approach'));
+    const steps = el('div', 'pet-steps');
+    result.primary.forEach(entry => {
+      const step = el('div', 'pet-step');
+      step.append(el('strong', '', entry.name), el('p', '', entry.reason));
+      steps.append(step);
     });
-    follow.append(choices);
-    card.append(follow);
+    answer.append(steps);
+    const layers = result.complementary.filter(entry => entry.code !== 'governance');
+    if (layers.length) answer.append(el('p', 'also-consider', `Also consider: ${layers.map(entry => entry.name).join(' · ')}`));
   }
-  const codes = [...result.primary, ...result.alternatives, ...result.complementary].map(x => x.code);
-  const hits = evidenceFor(state.index, query, codes, 5);
-  renderEvidence(hits);
-  card.append(citedSources(hits));
-  card.append(el('p', 'answer-footnote', 'Explore this design with privacy and PET specialists before using it.'));
-  return card;
+
+  state.pendingQuestion = question;
+  if (question) answer.append(followupQuestion(question));
+
+  const codes = [...result.primary, ...result.complementary, ...result.alternatives].map(entry => entry.code);
+  const hits = codes.length ? evidenceFor(state.index, query, codes, 5) : [];
+  state.evidence = hits;
+  if (codes.length || result.avoid.length) answer.append(sourceDetails(hits, reasons(result)));
+  if (Object.keys(state.profile).length) answer.append(caseDetails());
+  return answer;
 }
 
 function showRecommendation(query) {
   if (state.sourceStatus !== 'ready') return;
-  const result = assessCase(state.profile);
-  addMessage('assistant', recommendationMessage(result, query));
+  state.mode = 'choose';
+  addMessage('assistant', recommendationMessage(assessCase(state.profile), query));
 }
 
 function learningMessage(query, retrievalQuery = query) {
   let hits = retrieve(state.index, retrievalQuery, { limit: 12 });
   if (/^\s*(what is|what are|define|explain)\b/i.test(query)) {
     hits = hits.slice().sort((a, b) => {
-      const definition = x => x.document.id.endsWith('definition') || x.document.tags.includes('definition') ? 1 : 0;
-      const offTopic = x => /differential privacy|\bdp\b/i.test(query) && !/synthetic|fake/i.test(query) && x.document.tags.includes('synthetic_data') ? 1 : 0;
+      const definition = hit => hit.document.id.endsWith('definition') || hit.document.tags.includes('definition') ? 1 : 0;
+      const offTopic = hit => /differential privacy|\bdp\b/i.test(query) && !/synthetic|fake/i.test(query) && hit.document.tags.includes('synthetic_data') ? 1 : 0;
       return definition(b) - definition(a) || offTopic(a) - offTopic(b) || b.score - a.score;
     });
   }
   hits = hits.slice(0, 4);
-  renderEvidence(hits);
+  state.evidence = hits;
+  state.pendingQuestion = null;
   const answer = el('div', 'answer');
-  answer.append(el('div', 'answer-badge', 'PUBLIC-SOURCE ANSWER'));
   if (!hits.length) {
-    answer.append(el('h3', '', 'I need a narrower question'), el('p', 'answer-lead', 'I could not find a close match in the reviewed public source set. Try naming a PET, an output, or a data-sharing situation.'));
+    answer.append(el('p', 'answer-lead', 'I could not find a close match. Try naming a PET or describing what you need to do.'));
     return answer;
   }
-  answer.append(el('h3', '', 'Here is what the sources say'));
+  const count = /\b(compare|difference|versus|vs\.?|between)\b/i.test(query) ? 2 : 1;
   const seen = new Set();
-  hits.slice(0, 3).forEach((hit, i) => {
+  hits.slice(0, count).forEach(hit => {
     if (seen.has(hit.document.text)) return;
     seen.add(hit.document.text);
-    const p = el('p', 'source-answer', hit.document.text + ' ');
-    p.append(safeLink(hit.document.url, `[${i + 1}]`, 'inline-citation'));
-    answer.append(p);
+    const paragraph = el('p', 'source-answer', `${hit.document.text} `);
+    paragraph.append(safeLink(hit.document.url, 'Source ↗', 'inline-citation'));
+    answer.append(paragraph);
   });
-  answer.append(citedSources(hits));
-  const end = el('p', 'answer-footnote', 'Want to apply this to your case? Describe your goal, the data holders, what can move, and the output you need.');
-  answer.append(end);
+  answer.append(sourceDetails(hits));
   return answer;
 }
 
 function planningMessage(query) {
   const assessment = assessCase(state.profile);
-  const codes = [...assessment.primary, ...assessment.complementary].map(x => x.code);
+  if (assessment.profile.goal && assessment.status === 'escalate') return recommendationMessage(assessment, query);
+  const codes = [...assessment.primary, ...assessment.complementary].map(entry => entry.code);
   const hits = codes.length
     ? evidenceFor(state.index, query, codes, 5)
-    : retrieve(state.index, `${query} pilot implementation risk evaluation governance`, { limit: 5 });
-  renderEvidence(hits);
+    : retrieve(state.index, `${query} pilot evaluation governance`, { limit: 5 });
+  state.evidence = hits;
+  state.pendingQuestion = null;
   const answer = el('div', 'answer');
-  answer.append(el('div', 'answer-badge', 'IMPLEMENTATION PATH'), el('h3', '', 'Turn the idea into a reviewed pilot'));
+  answer.append(el('h2', 'answer-title', 'Plan a small pilot'));
   const steps = [
-    ['Frame the decision', 'Write the purpose, people affected, data holders, exact fields, permitted data flows, and required output. Confirm authority and a human owner.'],
-    ['Define the threat model', 'State who must not learn source records, who can see outputs, and what happens after repeated releases.'],
-    ['Compare architectures', 'Pilot at least one simpler baseline and one layered PET design. Record security assumptions, engineering effort, and operations.'],
-    ['Test privacy and usefulness', 'For linkage, measure false matches and missed matches. For synthetic data, test disclosure risk and cross-table utility. For DP, plan contribution bounds, budget, and small-group utility.'],
-    ['Review before release', 'Have legal, privacy, domain, and technical owners inspect the result, source evidence, residual risks, and output controls.']
+    ['Define the use', 'Record the purpose, data holders, permitted data flows, and needed output.'],
+    ['Compare options', assessment.primary.length
+      ? `Test ${assessment.primary.map(entry => entry.name).join(' and ')} against a simpler baseline.`
+      : 'Compare a PET approach with a simpler baseline.'],
+    ['Test', 'Use mock or approved data to measure privacy risk, usefulness, and effort.'],
+    ['Review', 'Have privacy, legal, domain, and technical owners review before live use or release.']
   ];
   const list = el('ol', 'plan-steps');
-  steps.forEach(([title, body]) => {
-    const li = el('li');
-    li.append(el('strong', '', title), el('p', '', body));
-    list.append(li);
+  steps.forEach(([title, detail]) => {
+    const item = el('li');
+    item.append(el('strong', '', title), document.createTextNode(` — ${detail}`));
+    list.append(item);
   });
-  answer.append(list);
-  if (assessment.primary.length) answer.append(el('p', 'plan-tail', `For this case, begin by evaluating ${assessment.primary.map(x => x.name).join(' and ')}. The case panel can narrow that path.`));
-  answer.append(citedSources(hits));
+  answer.append(list, sourceDetails(hits));
   return answer;
 }
 
 function isLegalQuestion(text) {
   const clause = text.trim().split(/[.!?]/).map(x => x.trim()).filter(Boolean).at(-1) || text;
-  const legalTerms = /\b(ferpa|gdpr|compliance|compliant|legal|legally|law|lawful|regulation|regulatory|permitted|allowed|consent|authorization|authority|data.sharing agreement)\b/i;
-  return legalTerms.test(clause) && (/\b(under|according to)\b/i.test(clause) || /^\s*(can|may|must|should|do|does|is|are|what|how|which|whether|ferpa|gdpr|legal|compliance)\b/i.test(clause));
+  const terms = /\b(ferpa|gdpr|compliance|compliant|legal|legally|law|lawful|regulation|regulatory|permitted|allowed|consent|authorization|authority|data.sharing agreement)\b/i;
+  return terms.test(clause) && (/\b(under|according to)\b/i.test(clause) || /^\s*(can|may|must|should|do|does|is|are|what|how|which|whether|ferpa|gdpr|legal|compliance)\b/i.test(clause));
 }
 
 function legalMessage(query) {
@@ -294,23 +266,12 @@ function legalMessage(query) {
       const host = new URL(hit.document.url).hostname;
       return ferpa ? host === 'studentprivacy.ed.gov' : host === 'ico.org.uk' || host === 'www.gov.uk';
     }).slice(0, 4);
-  renderEvidence(hits);
+  state.evidence = hits;
+  state.pendingQuestion = null;
   const answer = el('div', 'answer');
-  answer.append(el('div', 'answer-badge', 'LEGAL AND PRIVACY REVIEW'));
-  answer.append(el('h3', '', 'This needs a human review'));
-  answer.append(el('p', 'answer-lead', 'I cannot determine from a chat whether a use or disclosure is legally permitted or compliant. The answer depends on the jurisdiction, purpose, authority, agreements, data, and who receives the result.'));
-  if (hits.length) {
-    answer.append(el('h4', 'answer-section-title', 'Relevant public guidance'));
-    hits.slice(0, 2).forEach((hit, i) => {
-      const p = el('p', 'source-answer', `${hit.document.text} `);
-      p.append(safeLink(hit.document.url, `[${i + 1}]`, 'inline-citation'));
-      answer.append(p);
-    });
-  } else {
-    answer.append(el('p', 'source-answer', 'I do not have an applicable primary legal source for this question in the public source library.'));
-  }
-  answer.append(citedSources(hits));
-  answer.append(el('p', 'answer-footnote', 'Please have a qualified privacy or legal reviewer confirm the applicable law and the facts before using a PET or releasing data.'));
+  answer.append(el('h2', 'answer-title', 'Ask a privacy or legal reviewer'));
+  answer.append(el('p', 'answer-lead answer-warning', 'A chat cannot confirm whether this use or disclosure is allowed. A reviewer needs the purpose, data, agreements, and people receiving the result.'));
+  answer.append(sourceDetails(hits));
   return answer;
 }
 
@@ -319,7 +280,7 @@ function startsNewCase(text) {
 }
 
 function isCaseContinuation(text) {
-  return /^\s*(also|and|what if|in this case|for this case|in the same case|for the same project|we also|same case)\b/i.test(text);
+  return /^\s*(also|and|what if|in this case|for this case|in the same case|for the same project|we also|same case|actually|correction|instead)\b/i.test(text);
 }
 
 function isTopicFollowup(text) {
@@ -328,24 +289,42 @@ function isTopicFollowup(text) {
 
 function classify(text, inferred) {
   if (/\b(plan|pilot|implement|evaluate|roll.?out|deployment|how would we build)\b/i.test(text)) return 'plan';
-  if (/^\s*(what is|what are|explain|define|how does|how do|when is|when does|tell me about|compare)\b/i.test(text) && !/\b(we need|our (case|data|agency)|which should we|recommend for us)\b/i.test(text)) return 'learn';
-  if (Object.keys(inferred).length || /\b(recommend|choose|best|which pet|what should|our case|we need)\b/i.test(text)) return 'choose';
+  if (/^\s*(what is|what are|explain|define|how does|how do|when is|when does|tell me about|compare)\b/i.test(text)
+    && !/\b(we need|our (case|data|agency)|which should we|recommend for us)\b/i.test(text)) return 'learn';
+  if (Object.keys(inferred).length || /\b(recommend|choose|best|which pet|what should|our case|we need|use case)\b/i.test(text)) return 'choose';
   return 'learn';
+}
+
+function answerToPending(text) {
+  const field = state.pendingQuestion?.field;
+  if (!field) return null;
+  const answer = text.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim();
+  const options = FIELDS[field].options;
+  const exact = options.find(([value, label]) => answer === value || answer === label.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim());
+  if (exact) return exact[0];
+  if (/^(yes|no|not sure|unknown)\b/.test(answer)) {
+    const value = answer.startsWith('not sure') || answer.startsWith('unknown') ? 'unknown' : answer.startsWith('yes') ? 'yes' : 'no';
+    if (options.some(([option]) => option === value)) return value;
+  }
+  return null;
 }
 
 function send(text) {
   const query = text.trim().slice(0, 1200);
   if (!query || state.sourceStatus !== 'ready') return false;
   const inferred = inferProfile(query);
-  if (startsNewCase(query) || (inferred.goal && state.profile.goal && !isCaseContinuation(query))) reset();
+  if (/\b(?:won't|will not|do not|never|no plans? to)\b.{0,35}\b(?:publish|release|share)\b.{0,60}\b(?:names?|identifiers?|pii)\b/i.test(query)) inferred.directRelease = 'no';
+  const newCase = startsNewCase(query) || Boolean(inferred.goal && state.profile.goal && inferred.goal !== state.profile.goal && !isCaseContinuation(query));
+  if (newCase) reset();
+  const pendingAnswer = newCase ? null : answerToPending(query);
   addMessage('user', query);
   const followup = Boolean(state.mode === 'learn' && state.lastTopicQuery && !inferred.goal && isTopicFollowup(query));
-  const intent = isLegalQuestion(query) ? 'legal' : followup ? 'learn' : classify(query, inferred);
-  if (intent === 'choose') {
+  const intent = pendingAnswer ? 'choose' : isLegalQuestion(query) ? 'legal' : followup ? 'learn' : classify(query, inferred);
+  if (intent === 'choose' || intent === 'plan') {
     state.profile = { ...state.profile, ...inferred };
-    renderFields();
+    if (pendingAnswer) state.profile[state.pendingQuestion.field] = pendingAnswer;
   }
-  setMode(intent === 'legal' ? 'learn' : intent);
+  state.mode = intent;
   if (intent === 'legal') addMessage('assistant', legalMessage(query));
   else if (intent === 'plan') { addMessage('assistant', planningMessage(query)); state.lastTopicQuery = query; }
   else if (intent === 'choose') { showRecommendation(query); state.lastTopicQuery = query; }
@@ -357,30 +336,28 @@ function send(text) {
 }
 
 function exportSummary() {
+  if (!state.transcript.length) return;
   const assessment = assessCase(state.profile);
   const lines = ['# PETs Model case summary', '', `Exported: ${new Date().toISOString()}`, '', '## Case details'];
   for (const [key, value] of Object.entries(cleanProfile(state.profile))) lines.push(`- ${FIELDS[key].label} ${profileLabel(key, value)}`);
-  lines.push('', '## Exploratory architecture', assessment.summary, '', '### Start here');
-  assessment.primary.forEach(x => lines.push(`- ${x.name}: ${x.reason} Caveat: ${x.caveat}`));
-  lines.push('', '### Complementary layers');
-  assessment.complementary.forEach(x => lines.push(`- ${x.name}: ${x.reason} Caveat: ${x.caveat}`));
+  lines.push('', '## Exploratory architecture', assessment.summary, '', '### Suggested approaches');
+  assessment.primary.forEach(entry => lines.push(`- ${entry.name}: ${entry.reason} Check: ${entry.caveat}`));
+  assessment.complementary.forEach(entry => lines.push(`- ${entry.name}: ${entry.reason} Check: ${entry.caveat}`));
   lines.push('', '### Questions to resolve');
-  assessment.missing.forEach(x => lines.push(`- ${x.text}`));
-  lines.push('', '## Public sources');
-  state.evidence.forEach(x => lines.push(`- ${x.document.title} — ${x.document.url}`));
-  lines.push('', '## Conversation', ...state.transcript.flatMap(x => [
-    `### ${x.role === 'assistant' ? 'Assistant' : 'You'}`,
-    x.text,
-    ...(x.sources.length ? ['', 'Sources for this answer:', ...x.sources.map(source => `- ${source.title} — ${source.url}`)] : []),
+  assessment.missing.forEach(question => lines.push(`- ${question.text}`));
+  lines.push('', '## Conversation', ...state.transcript.flatMap(entry => [
+    `### ${entry.role === 'assistant' ? 'Assistant' : 'You'}`,
+    entry.text,
+    ...(entry.sources.length ? ['', 'Sources:', ...entry.sources.map(source => `- ${source.title} — ${source.url}`)] : []),
     ''
   ]));
   lines.push('Review this local export before sharing. It is not an expert-approved recommendation.');
   const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'pets-model-case-summary.md';
-  a.click();
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'pets-model-case-summary.md';
+  link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -389,13 +366,11 @@ function reset() {
   state.evidence = [];
   state.transcript = [];
   state.lastTopicQuery = '';
+  state.pendingQuestion = null;
+  state.mode = 'learn';
   messages.replaceChildren();
-  renderFields();
-  renderEvidence([]);
-  switchPanel('case');
+  document.body.classList.remove('has-messages');
   $('#prompt').value = '';
-  setMode('learn');
-  addMessage('assistant', 'Ask about a PET or describe a use case.');
 }
 
 $('#composer').addEventListener('submit', event => {
@@ -405,29 +380,12 @@ $('#composer').addEventListener('submit', event => {
   input.focus();
 });
 $('#prompt').addEventListener('keydown', event => {
-  if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); $('#composer').requestSubmit(); }
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    $('#composer').requestSubmit();
+  }
 });
 document.querySelectorAll('[data-prompt]').forEach(button => button.addEventListener('click', () => send(button.dataset.prompt)));
-document.querySelectorAll('[data-starter]').forEach(button => button.addEventListener('click', () => {
-  const mode = button.dataset.starter;
-  setMode(mode);
-  if (mode === 'learn') { $('#prompt').value = 'What is differential privacy, and when is it useful?'; $('#prompt').focus(); }
-  if (mode === 'choose') { switchPanel('case'); $('#prompt').value = 'We need to '; $('#prompt').focus(); }
-  if (mode === 'plan') send('How would we plan and evaluate a privacy-enhancing technology pilot?');
-}));
-$('#tab-case').addEventListener('click', () => switchPanel('case'));
-$('#tab-evidence').addEventListener('click', () => switchPanel('evidence'));
-for (const tab of [$('#tab-case'), $('#tab-evidence')]) {
-  tab.addEventListener('keydown', event => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const next = tab.id === 'tab-case' ? 'evidence' : 'case';
-    const which = event.key === 'Home' ? 'case' : event.key === 'End' ? 'evidence' : next;
-    switchPanel(which);
-    $(`#tab-${which}`).focus();
-  });
-}
-$('#assess').addEventListener('click', () => { if (state.sourceStatus === 'ready') { setMode('choose'); showRecommendation('Structured use case privacy architecture'); } });
 $('#export').addEventListener('click', exportSummary);
 $('#reset').addEventListener('click', reset);
 
@@ -439,11 +397,10 @@ fetch('./data/sources.json', { cache: 'no-cache' }).then(response => {
 }).then(documents => {
   state.index = createIndex(documents);
   if (!state.index.docs.length) throw new Error('No source passages loaded');
-  $('#source-count').textContent = `${state.index.docs.length} reviewed public passages`;
+  $('#source-count').textContent = `${state.index.docs.length} public sources`;
   setSourceStatus('ready');
 }).catch(() => {
   setSourceStatus('failed');
-  $('#source-count').textContent = 'Source library unavailable';
-  renderEvidence([]);
-  addMessage('assistant', 'The public-source library did not load, so case assessment is unavailable. Please refresh the page and try again.');
+  $('#source-count').textContent = 'Sources unavailable';
+  addMessage('assistant', 'The public sources did not load. Refresh the page to try again.');
 });

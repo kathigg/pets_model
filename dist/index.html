@@ -3,78 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#041e41">
-  <meta name="description" content="Ask about privacy-enhancing technologies and explore a use case with public sources.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Explore privacy-enhancing technologies and your use case in one conversation.">
   <title>PETs Model</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <a class="skip" href="#chat">Skip to conversation</a>
+  <a class="skip" href="#messages">Skip to conversation</a>
   <div class="app-shell">
-    <aside class="rail" aria-label="About and navigation">
+    <header class="topbar">
       <a class="brand" href="./" aria-label="PETs Model home">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-        <span><strong>PETs</strong><em>Model</em></span>
+        <span>PETs Model</span>
       </a>
-      <div class="rail-actions">
-        <button class="rail-action active" data-starter="learn"><span class="rail-icon">01</span><span><strong>Learn</strong></span></button>
-        <button class="rail-action" data-starter="choose"><span class="rail-icon">02</span><span><strong>Explore a case</strong></span></button>
-        <button class="rail-action" data-starter="plan"><span class="rail-icon">03</span><span><strong>Plan a pilot</strong></span></button>
+      <div class="top-actions">
+        <span id="source-count" class="source-status" role="status" aria-live="polite">Loading sources…</span>
+        <button id="export" class="quiet-button" type="button" title="Download this conversation">Download</button>
+        <button id="reset" class="new-button" type="button">New chat</button>
       </div>
-      <div class="rail-bottom">
-        <div class="local-badge"><span class="pulse"></span> Public sources only</div>
-        <p>Use a hypothetical case. Your text stays in this browser.</p>
-        <button id="reset" class="text-button" type="button">New conversation <span aria-hidden="true">↗</span></button>
-      </div>
-    </aside>
+    </header>
 
     <main class="main" id="chat">
-      <header class="topbar">
-        <div class="top-label"><span class="tiny-square"></span> Explore</div>
-        <div class="top-actions"><span class="source-count" id="source-count">Loading public sources…</span><button id="export" class="icon-button" type="button" title="Download a case summary" aria-label="Download a case summary">↓</button></div>
-      </header>
-
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <h1 id="hero-title">What do you need to do <span>with the data?</span></h1>
-          <p>Ask about a PET or describe a use case. I’ll show sources and questions to resolve.</p>
-          <div class="starter-pills" role="group" aria-label="Suggested starting points">
-            <button type="button" data-prompt="What is privacy-preserving record linkage, and when does it help education agencies?">Learn about linkage <span aria-hidden="true">↗</span></button>
-            <button type="button" data-prompt="Two education agencies need to link student records, but raw identifiers cannot move. What should we explore?">Explore a use case <span aria-hidden="true">↗</span></button>
-            <button type="button" data-prompt="How would we plan and evaluate a privacy-enhancing technology pilot?">Plan implementation <span aria-hidden="true">↗</span></button>
+      <section class="conversation" aria-label="PETs Model chat">
+        <div class="welcome">
+          <h1>How can I help?</h1>
+          <p>Ask about a PET or describe your use case.</p>
+          <div class="starter-pills" role="group" aria-label="Try a question">
+            <button type="button" data-prompt="What is differential privacy?">Explain a PET</button>
+            <button type="button" data-prompt="I want to explore a use case">Explore a use case</button>
+            <button type="button" data-prompt="How do I plan a PET pilot?">Plan a pilot</button>
           </div>
         </div>
-      </section>
 
-      <section class="conversation" aria-label="Conversation">
-        <div class="section-heading"><h2>Conversation</h2></div>
-        <div id="messages" class="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+        <div id="messages" class="messages" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
+
         <form id="composer" class="composer">
-          <label class="sr-only" for="prompt">Describe your privacy challenge</label>
-          <textarea id="prompt" rows="2" maxlength="1200" placeholder="e.g. Three agencies need to link records, identifiers cannot move, and only aggregate results may leave…"></textarea>
-          <div class="composer-foot"><span>Use a hypothetical case. Do not enter personal data.</span><button type="submit" aria-label="Send message">Send <span aria-hidden="true">↑</span></button></div>
+          <label class="sr-only" for="prompt">Your message</label>
+          <textarea id="prompt" rows="2" maxlength="1200" placeholder="Ask a question or describe what you need to do…"></textarea>
+          <div class="composer-foot">
+            <span>Use a hypothetical case. Do not enter personal data.</span>
+            <button type="submit">Send<span class="sr-only"> message</span><span aria-hidden="true"> ↑</span></button>
+          </div>
         </form>
       </section>
     </main>
-
-    <aside class="insight" aria-label="Use case and evidence">
-      <div class="insight-header"><div><p class="eyebrow">Workspace</p><h2>Your use case</h2></div><span class="insight-symbol" aria-hidden="true">✳</span></div>
-      <div class="panel-tabs" role="tablist" aria-label="Workspace panels">
-        <button id="tab-case" type="button" role="tab" aria-selected="true" aria-controls="panel-case">Case</button>
-        <button id="tab-evidence" type="button" role="tab" aria-selected="false" aria-controls="panel-evidence">Evidence</button>
-      </div>
-      <div id="panel-case" role="tabpanel" aria-labelledby="tab-case">
-        <div class="progress-row"><span>Case definition</span><strong id="progress-label">0%</strong></div><div class="progress-track"><span id="progress-bar"></span></div>
-        <div id="field-list" class="field-list"></div>
-        <button id="assess" type="button" class="assess-button">Review possible architecture <span aria-hidden="true">→</span></button>
-      </div>
-      <div id="panel-evidence" role="tabpanel" aria-labelledby="tab-evidence" hidden>
-        <div class="evidence-head"><strong>Sources behind this answer</strong><span id="evidence-count">0 sources</span></div>
-        <div id="evidence-list" class="evidence-list"><p class="empty-evidence">Ask a question to see the public sources used.</p></div>
-        <div class="panel-note"><strong>Public sources only</strong><p>Internal project notes and datasets are excluded.</p></div>
-      </div>
-    </aside>
   </div>
   <script type="module" src="./app.mjs"></script>
 </body>

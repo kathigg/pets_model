@@ -97,4 +97,5 @@ test('natural-language intake keeps unknowns unknown and captures explicit const
   assert.equal(facts.output, 'aggregate');
   assert.equal(facts.repeated, 'yes');
   assert.equal(facts.authority, undefined);
+  assert.equal(inferProfile('Two education agencies need to link student records.').holders, 'two');
 });
