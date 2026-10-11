@@ -23,7 +23,7 @@ test('Vertex express request uses structured citations without exposing the key 
   assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
   assert.equal(request.body.generationConfig.responseMimeType, 'application/json');
   assert.equal(request.body.generationConfig.temperature, undefined);
-  assert.equal(request.body.generationConfig.maxOutputTokens, undefined);
+  assert.equal(request.body.generationConfig.maxOutputTokens, 2048);
   assert.deepEqual(
     request.body.generationConfig.responseSchema.properties.segments.items.properties.source_ids.items.enum,
     ['source-one']

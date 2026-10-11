@@ -22,6 +22,12 @@ The endpoint accepts a bounded JSON message, intent, case profile, and recent co
 
 The server rejects missing, invented, or malformed citations; the browser checks returned source IDs and URLs against its public corpus before display. This checks citation identity and format, not whether every sentence is substantively correct. The browser uses local retrieval and rule content if the model is missing, fails, or returns an unusable answer. Answers remain exploratory until experts verify authority, threat model, implementation feasibility, disclosure risk, utility, and source currency.
 
+## Public deployment path
+
+The repository also includes a lightweight Cloudflare Worker for an anonymous, shareable deployment outside ChatGPT. Cloudflare serves the existing `public/` files directly; only `/api/chat` invokes the Worker. The Worker uses Cloudflare's visitor IP header as a hashed rate-limit key and does not send it to Gemini. A native limiter allows six requests per minute per visitor. A single SQLite-backed Durable Object reserves a model-call attempt immediately before each paid request and enforces a shared ceiling of 100 attempts per UTC day. Failed provider calls count toward that ceiling; review-gated and evidence-free questions do not. If the limiter or budget is unavailable, the Worker does not call Gemini. The browser falls back to local public-source answers.
+
+The GitHub deployment workflow reads `GEMINI_API_KEY` from the `Gemini` Environment and stores it as a Cloudflare Worker runtime secret. The public host is not deployed until a Cloudflare account and scoped deployment token are connected. The current Sites preview keeps its existing access setting and has no Gemini key. The daily ceiling constrains this app's paid call attempts; it is not a guaranteed spend cap for the Google account or other applications using that key.
+
 ## Privacy and content boundary
 
 The corpus contains short original summaries of reviewed, public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).

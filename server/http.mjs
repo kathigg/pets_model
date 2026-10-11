@@ -57,10 +57,10 @@ async function readLimitedBody(request) {
   }
 }
 
-/** Thin HTTP boundary for the same-origin, authenticated Sites chat endpoint. */
+/** Thin HTTP boundary shared by the authenticated Site and a public Worker. */
 export async function handleChatRequest(request, {
-  apiKey, model, projectId, location, fetchImpl, answer = answerWithRag, requireIdentity = true,
-  now = Date.now()
+  apiKey, model, projectId, location, fetchImpl, reserveModelCall, answer = answerWithRag, requireIdentity = true,
+  rateKey, now = Date.now()
 } = {}) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   const identity = request.headers.get('oai-authenticated-user-id');
@@ -86,7 +86,8 @@ export async function handleChatRequest(request, {
       !['learn', 'choose', 'plan'].includes(input.intent)) {
     return json({ error: 'Invalid question.' }, 400);
   }
-  if (!permitted(identity || 'local-preview', now)) return json({ error: 'Please wait before trying again.' }, 429);
+  // An external host can supply a trusted visitor key; request headers are never trusted for it.
+  if (!permitted(rateKey || identity || 'local-preview', now)) return json({ error: 'Please wait before trying again.' }, 429);
 
   try {
     const result = await answer({
@@ -94,7 +95,7 @@ export async function handleChatRequest(request, {
       intent: input.intent,
       profile: input.profile,
       context: input.context
-    }, { apiKey, model, projectId, location, fetchImpl });
+    }, { apiKey, model, projectId, location, fetchImpl, reserveModelCall });
     return json(result);
   } catch {
     return json({ status: 'unavailable', segments: [], sources: [], reason: 'server_error' }, 503);

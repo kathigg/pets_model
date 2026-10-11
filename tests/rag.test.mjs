@@ -49,6 +49,28 @@ test('no matching public evidence abstains without a model call', async () => {
   assert.equal(model.calls.length, 0);
 });
 
+test('daily model budget is reserved only after evidence and review gates, and fails closed', async () => {
+  const model = recordingModel(ids => [{ text: 'A cited answer.', source_ids: [ids[0]] }]);
+  let reservations = 0;
+  const reserveModelCall = async () => { reservations++; return false; };
+  const noEvidence = await answerWithRag({ message: 'volcanoes astrophysics xylophone', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl, reserveModelCall });
+  assert.equal(noEvidence.reason, 'no_evidence');
+  const review = await answerWithRag({ message: 'Can we share student records under FERPA?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl, reserveModelCall });
+  assert.equal(review.reason, 'human_review_required');
+  assert.equal(reservations, 0);
+  const limited = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl, reserveModelCall });
+  assert.equal(limited.reason, 'daily_limit');
+  assert.equal(reservations, 1);
+  assert.equal(model.calls.length, 0);
+  const failed = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl, reserveModelCall: async () => { throw new Error('storage unavailable'); } });
+  assert.equal(failed.status, 'unavailable');
+  assert.equal(model.calls.length, 0);
+});
+
 test('protected case without reviewed authority never reaches the model', async () => {
   const model = recordingModel(() => { throw new Error('Should not call model'); });
   const response = await answerWithRag({

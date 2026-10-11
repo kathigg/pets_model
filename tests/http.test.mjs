@@ -67,3 +67,20 @@ test('chat endpoint limits repeated model calls for one identity', async () => {
   assert.equal((await handleChatRequest(limitedRequest(), { now: 10030, answer })).status, 429);
   assert.equal((await handleChatRequest(limitedRequest(), { now: 610000, answer })).status, 200);
 });
+
+test('anonymous host rate key is supplied by the server, not a visitor identity header', async () => {
+  const answer = async () => ({ status: 'ok', segments: [], sources: [] });
+  const anonymous = () => request(valid, { 'oai-authenticated-user-id': 'forged-identity' });
+  for (let i = 0; i < 30; i++) {
+    const response = await handleChatRequest(anonymous(), {
+      requireIdentity: false, rateKey: 'visitor-a', now: 2000000 + i, answer
+    });
+    assert.equal(response.status, 200);
+  }
+  assert.equal((await handleChatRequest(anonymous(), {
+    requireIdentity: false, rateKey: 'visitor-a', now: 2000030, answer
+  })).status, 429);
+  assert.equal((await handleChatRequest(anonymous(), {
+    requireIdentity: false, rateKey: 'visitor-b', now: 2000031, answer
+  })).status, 200);
+});

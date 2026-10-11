@@ -42,6 +42,7 @@ export async function generateGeminiDraft(prompt, sourceIds, {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
       thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: 'LOW' },
+      maxOutputTokens: 2048,
       responseMimeType: 'application/json',
       responseSchema: responseSchema(sourceIds)
     }
