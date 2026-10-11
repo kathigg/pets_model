@@ -18,6 +18,6 @@ The validator permits reviewed MDI, NIST, ICO, U.S. Department of Education, GOV
 
 Do not add internal meeting notes, partner contact sheets, grant budgets, unfinished PET sheets, draft slide decks, unverified public-link inventories, private repositories, raw datasets, user chats, or documents whose release rights are unclear. Supplied attachments are excluded as files even when an attachment matches a public report; use the publisher's public page or report link.
 
-The Worker sends retrieved **public** summaries to Gemini as evidence. A visitor's question, recent conversation, case facts, and rule summary may also be sent when Gemini is active, so corpus approval does not make visitor input safe to share. Do not enter protected or confidential case details. The request asks the provider not to store it (`store: false`), but provider and host retention require separate review.
+The Worker sends retrieved **public** summaries to Vertex AI as evidence. A visitor's question, recent conversation, case facts, and rule summary may also be sent when Gemini is active, so corpus approval does not make visitor input safe to share. Do not enter protected or confidential case details. Provider and host retention require separate review.
 
 If sources conflict or one has a known error, quarantine it until reviewed. Retrieval rank is not truth or confidence. State insufficient evidence plainly and route complex choices to expert review. Source review dates are snapshots, not guarantees that external guidance remains current.

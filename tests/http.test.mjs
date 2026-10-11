@@ -42,7 +42,7 @@ test('chat endpoint rejects a body larger than 8 KB even with a forged length', 
 test('chat endpoint passes bounded request fields and returns private, uncached JSON', async () => {
   let received;
   const response = await handleChatRequest(request({ ...valid, extra: 'discard me' }), {
-    apiKey: 'test-key', model: 'gemini-test',
+    apiKey: 'test-key', model: 'gemini-test', projectId: 'pets-model-123', location: 'global',
     answer: async (input, options) => {
       received = { input, options };
       return { status: 'ok', segments: [{ text: 'A cited answer.', source_ids: ['a'] }], sources: [] };
@@ -53,6 +53,8 @@ test('chat endpoint passes bounded request fields and returns private, uncached 
   assert.equal((await response.json()).status, 'ok');
   assert.equal(received.input.extra, undefined);
   assert.equal(received.options.apiKey, 'test-key');
+  assert.equal(received.options.projectId, 'pets-model-123');
+  assert.equal(received.options.location, 'global');
 });
 
 test('chat endpoint limits repeated model calls for one identity', async () => {

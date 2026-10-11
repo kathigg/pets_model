@@ -112,7 +112,7 @@ function validateDraft(draft, hits) {
 }
 
 /** Public-source RAG with deterministic privacy gates and validated citations. */
-export async function answerWithRag(input, { apiKey, model, fetchImpl } = {}) {
+export async function answerWithRag(input, { apiKey, model, projectId, location, fetchImpl } = {}) {
   const message = typeof input?.message === 'string' ? input.message.trim().slice(0, MAX_MESSAGE) : '';
   let intent = ['learn', 'choose', 'plan'].includes(input?.intent) ? input.intent : 'learn';
   if (!message) return result('insufficient', 'Please ask a question or describe your use case.', 'empty_message');
@@ -143,7 +143,7 @@ export async function answerWithRag(input, { apiKey, model, fetchImpl } = {}) {
     const draft = await generateGeminiDraft(
       taskPrompt({ message, intent, profile, context, assessment, hits }),
       hits.map(hit => hit.document.id),
-      { apiKey, model, fetchImpl }
+      { apiKey, model, projectId, location, fetchImpl }
     );
     return validateDraft(draft, hits) || result('unavailable', 'I could not verify the answer against the public sources.', 'invalid_citations');
   } catch {

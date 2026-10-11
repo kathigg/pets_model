@@ -13,7 +13,7 @@ function recordingModel(makeSegments) {
   const fetchImpl = async (url, options) => {
     const body = JSON.parse(options.body);
     calls.push({ url, options, body });
-    const ids = body.generationConfig.responseFormat.text.schema.properties.segments.items.properties.source_ids.items.enum;
+    const ids = body.generationConfig.responseSchema.properties.segments.items.properties.source_ids.items.enum;
     return modelReply(makeSegments(ids, body));
   };
   return { calls, fetchImpl };
@@ -29,8 +29,8 @@ test('grounded informational answer exposes only cited public-source metadata', 
   assert.match(response.sources[0].url, /^https:\/\//);
   assert.equal(model.calls.length, 1);
   assert.equal(model.calls[0].options.headers['x-goog-api-key'], 'test-key');
-  assert.equal(model.calls[0].body.store, false);
-  assert.match(model.calls[0].url, /gemini-3\.8-flash:generateContent$/);
+  assert.equal(model.calls[0].body.store, undefined);
+  assert.match(model.calls[0].url, /gemini-3-flash-preview:generateContent$/);
 });
 
 test('invented citations cause fail-closed response', async () => {

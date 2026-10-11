@@ -1,22 +1,24 @@
-/** Server-only Gemini transport. No API key or provider response is sent to the browser. */
-export const DEFAULT_MODEL = 'gemini-3.8-flash';
+/** Server-only Vertex AI transport. No API key or provider response is sent to the browser. */
+export const DEFAULT_MODEL = 'gemini-3-flash-preview';
 
 function responseSchema(sourceIds) {
   return {
-    type: 'object',
-    additionalProperties: false,
+    type: 'OBJECT',
+    description: 'A concise PET answer grounded in the supplied public sources.',
     properties: {
       segments: {
-        type: 'array', minItems: 1, maxItems: 3,
+        type: 'ARRAY', minItems: 1, maxItems: 3,
         items: {
-          type: 'object', additionalProperties: false,
+          type: 'OBJECT',
           properties: {
-            text: { type: 'string' },
+            text: { type: 'STRING', description: 'One short, plain-language answer segment.' },
             source_ids: {
-              type: 'array', minItems: 1, maxItems: 3,
-              items: { type: 'string', enum: sourceIds }
+              type: 'ARRAY', minItems: 1, maxItems: 3,
+              description: 'IDs of the supplied public sources supporting this segment.',
+              items: { type: 'STRING', format: 'enum', enum: sourceIds }
             }
           },
+          propertyOrdering: ['text', 'source_ids'],
           required: ['text', 'source_ids']
         }
       }
@@ -26,20 +28,22 @@ function responseSchema(sourceIds) {
 }
 
 export async function generateGeminiDraft(prompt, sourceIds, {
-  apiKey, model = DEFAULT_MODEL, fetchImpl = fetch
+  apiKey, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch
 } = {}) {
   if (!apiKey || typeof apiKey !== 'string') throw new Error('Missing model credential');
   if (!/^[a-z0-9][a-z0-9.-]{0,79}$/i.test(model)) throw new Error('Invalid model name');
+  if (projectId && !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(projectId)) throw new Error('Invalid Vertex project ID');
+  if (projectId && !/^(?:global|[a-z]+-[a-z]+[0-9])$/.test(location)) throw new Error('Invalid Vertex location');
   if (!Array.isArray(sourceIds) || !sourceIds.length) throw new Error('No source IDs');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const modelPath = `publishers/google/models/${model}:generateContent`;
+  const scope = projectId ? `projects/${projectId}/locations/${location}/` : '';
+  const url = `https://aiplatform.googleapis.com/v1/${scope}${modelPath}`;
   const request = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    store: false,
     generationConfig: {
-      thinkingConfig: { thinkingLevel: 'low' },
-      responseFormat: {
-        text: { mimeType: 'application/json', schema: responseSchema(sourceIds) }
-      }
+      thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: 'LOW' },
+      responseMimeType: 'application/json',
+      responseSchema: responseSchema(sourceIds)
     }
   };
   const controller = new AbortController();

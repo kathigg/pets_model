@@ -59,7 +59,7 @@ async function readLimitedBody(request) {
 
 /** Thin HTTP boundary for the same-origin, authenticated Sites chat endpoint. */
 export async function handleChatRequest(request, {
-  apiKey, model, fetchImpl, answer = answerWithRag, requireIdentity = true,
+  apiKey, model, projectId, location, fetchImpl, answer = answerWithRag, requireIdentity = true,
   now = Date.now()
 } = {}) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
@@ -94,7 +94,7 @@ export async function handleChatRequest(request, {
       intent: input.intent,
       profile: input.profile,
       context: input.context
-    }, { apiKey, model, fetchImpl });
+    }, { apiKey, model, projectId, location, fetchImpl });
     return json(result);
   } catch {
     return json({ status: 'unavailable', segments: [], sources: [], reason: 'server_error' }, 503);
