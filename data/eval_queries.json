@@ -1,0 +1,12 @@
+[
+  {"query":"What is differential privacy and how does epsilon work?","expected_ids":["nist-dp-"]},
+  {"query":"Can two agencies compute statistics without moving raw data?","expected_ids":["nist-crypto-smpc","ico-smpc"]},
+  {"query":"What is private set intersection for exact overlap?","expected_ids":["ico-psi","nist-crypto-psi"]},
+  {"query":"Can synthetic education data be safely shared?","expected_ids":["nist-dp-synthetic","ico-synthetic"]},
+  {"query":"How do small cells affect student privacy in public tables?","expected_ids":["ed-small-cell"]},
+  {"query":"What is a trusted execution environment?","expected_ids":["ico-tee"]},
+  {"query":"What does FERPA say about de-identified student records?","expected_ids":["ed-ferpa-deidentification"]},
+  {"query":"Is hashing student identifiers the same as anonymizing them?","expected_ids":["nist-crypto-hashing"]},
+  {"query":"What should a synthetic data pilot measure?","expected_ids":["mdi-synthetic-pilot","nist-dp-synthetic-utility"]},
+  {"query":"What does a cross-jurisdiction education linkage pilot look like?","expected_ids":["mdi-dc-"]}
+]

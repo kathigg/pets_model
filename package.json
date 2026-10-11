@@ -1,0 +1,12 @@
+{
+  "name": "pets_model",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "validate:corpus": "node scripts/validate-corpus.mjs",
+    "eval": "node scripts/evaluate-retrieval.mjs",
+    "check": "node --check dist/engine.mjs && node --check dist/retrieval.mjs && node --check dist/app.mjs && npm run validate:corpus && npm test && npm run eval"
+  }
+}
