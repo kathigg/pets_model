@@ -153,7 +153,7 @@ const allowed = Object.fromEntries(Object.entries(FIELDS).map(([k, v]) => [k, ne
 export function cleanProfile(profile = {}) {
   const clean = {};
   for (const [key, value] of Object.entries(profile)) {
-    if (allowed[key]?.has(value)) clean[key] = value;
+    if (Object.hasOwn(allowed, key) && allowed[key].has(value)) clean[key] = value;
   }
   return clean;
 }

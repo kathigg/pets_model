@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessCase, inferProfile, nextQuestion } from '../dist/engine.mjs';
+import { assessCase, cleanProfile, inferProfile, nextQuestion } from '../public/engine.mjs';
 
 const codes = xs => xs.map(x => x.code);
+
+test('case profile ignores inherited property names in submitted JSON', () => {
+  const profile = JSON.parse('{"constructor":"x","__proto__":"y","goal":"link"}');
+  assert.deepEqual(cleanProfile(profile), { goal: 'link' });
+});
 
 test('fuzzy cross-agency linkage returns layered design and rejects exact hashing alone', () => {
   const result = assessCase({ goal: 'link', holders: 'many', rawMove: 'no', match: 'fuzzy', output: 'aggregate', repeated: 'yes', sensitivity: 'protected', capacity: 'medium', authority: 'yes' });

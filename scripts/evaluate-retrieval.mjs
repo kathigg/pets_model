@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { createIndex, retrieve } from '../dist/retrieval.mjs';
+import { createIndex, retrieve } from '../public/retrieval.mjs';
 
-const docs = JSON.parse(readFileSync(new URL('../dist/data/sources.json', import.meta.url), 'utf8'));
+const docs = JSON.parse(readFileSync(new URL('../public/data/sources.json', import.meta.url), 'utf8'));
 const cases = JSON.parse(readFileSync(new URL('../data/eval_queries.json', import.meta.url), 'utf8'));
 const index = createIndex(docs);
 let successes = 0;

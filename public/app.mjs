@@ -10,7 +10,8 @@ const el = (tag, className = '', text) => {
 };
 const state = {
   index: createIndex([]), profile: {}, evidence: [], transcript: [],
-  mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '', pendingQuestion: null
+  mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '', pendingQuestion: null,
+  busy: false, turn: 0, controller: null, apiUnavailable: false, aiNoticeShown: false
 };
 const messages = $('#messages');
 const mascot = $('#mascot');
@@ -76,13 +77,17 @@ function addMessage(kind, content) {
   row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
+function updateControls() {
+  const disabled = state.sourceStatus !== 'ready' || state.busy;
+  $('#prompt').disabled = disabled;
+  $('#composer button[type="submit"]').disabled = disabled;
+  $('#export').disabled = disabled;
+  document.querySelectorAll('[data-prompt]').forEach(button => { button.disabled = disabled; });
+}
+
 function setSourceStatus(status) {
   state.sourceStatus = status;
-  const unavailable = status !== 'ready';
-  $('#prompt').disabled = unavailable;
-  $('#composer button[type="submit"]').disabled = unavailable;
-  $('#export').disabled = unavailable;
-  document.querySelectorAll('[data-prompt]').forEach(button => { button.disabled = unavailable; });
+  updateControls();
 }
 
 function sourceDetails(hits, extra) {
@@ -102,6 +107,123 @@ function sourceDetails(hits, extra) {
   } else content.append(el('p', '', 'No close public source matched this question.'));
   details.append(content);
   return details;
+}
+
+function checkedModelAnswer(payload) {
+  if (payload?.status !== 'ok' || !Array.isArray(payload.segments) || !Array.isArray(payload.sources)
+    || !payload.segments.length || payload.segments.length > 8) return null;
+  const publicDocs = new Map(state.index.docs.map(doc => [doc.id, doc]));
+  const supplied = new Map();
+  for (const source of payload.sources) {
+    const doc = publicDocs.get(source?.id);
+    if (!doc || source.url !== doc.url || supplied.has(doc.id)) return null;
+    supplied.set(doc.id, doc);
+  }
+  const segments = [];
+  const cited = new Map();
+  for (const segment of payload.segments) {
+    const text = typeof segment?.text === 'string' ? segment.text.trim() : '';
+    if (!text || text.length > 2200 || !Array.isArray(segment.source_ids) || !segment.source_ids.length) return null;
+    const docs = [];
+    for (const id of segment.source_ids) {
+      const doc = supplied.get(id);
+      if (!doc) return null;
+      if (!docs.some(entry => entry.id === id)) docs.push(doc);
+      cited.set(id, doc);
+    }
+    segments.push({ text, docs });
+  }
+  return { segments, hits: [...cited.values()].map(document => ({ document, score: 1 })) };
+}
+
+function citedParagraphs(model) {
+  const content = el('div', 'model-explanation');
+  model.segments.forEach(segment => {
+    const paragraph = el('p', 'source-answer', `${segment.text} `);
+    segment.docs.forEach((doc, i) => {
+      if (i) paragraph.append(document.createTextNode(' '));
+      paragraph.append(safeLink(doc.url, segment.docs.length === 1 ? 'Source ↗' : `${i + 1} ↗`, 'inline-citation'));
+    });
+    content.append(paragraph);
+  });
+  return content;
+}
+
+function modelMessage(model, title = '') {
+  state.evidence = model.hits;
+  state.pendingQuestion = null;
+  const answer = el('div', 'answer');
+  if (title) answer.append(el('h2', 'answer-title', title));
+  answer.append(citedParagraphs(model), sourceDetails(model.hits));
+  return answer;
+}
+
+async function requestModel(intent, query) {
+  if (state.apiUnavailable) return { unavailable: true };
+  const controller = new AbortController();
+  state.controller = controller;
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  const context = state.transcript.slice(0, -1).slice(-4).map(entry => ({
+    role: entry.role, text: entry.text.slice(0, 500)
+  }));
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ message: query, intent, profile: cleanProfile(state.profile), context }),
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    if (response.status === 404 || response.status === 405) state.apiUnavailable = true;
+    if (!response.ok) return { unavailable: true };
+    const payload = await response.json();
+    if (payload?.status === 'review') return { review: true };
+    if (payload?.status === 'unavailable') return { unavailable: true };
+    if (payload?.status === 'insufficient') return null;
+    return checkedModelAnswer(payload) || { unavailable: true };
+  } catch {
+    return { unavailable: true };
+  } finally {
+    clearTimeout(timeout);
+    if (state.controller === controller) state.controller = null;
+  }
+}
+
+function localAnswer(answer, unavailable = false) {
+  if (unavailable && !state.aiNoticeShown && answer instanceof HTMLElement) {
+    answer.append(el('p', 'ai-note', 'AI is unavailable. Showing public sources.'));
+    state.aiNoticeShown = true;
+  }
+  return answer;
+}
+
+function pendingMessage() {
+  const row = el('div', 'message-row assistant pending');
+  row.append(el('div', 'bubble pending-bubble', 'Looking through public sources…'));
+  messages.append(row);
+  row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  return row;
+}
+
+async function modelTurn(intent, query, fallback, title = '') {
+  if (state.apiUnavailable) {
+    addMessage('assistant', localAnswer(fallback(), true));
+    return;
+  }
+  const turn = ++state.turn;
+  state.busy = true;
+  updateControls();
+  setMascot('waiting');
+  const pending = pendingMessage();
+  const model = await requestModel(intent, query);
+  if (turn !== state.turn) return;
+  pending.remove();
+  state.busy = false;
+  updateControls();
+  if (model?.review) addMessage('assistant', legalMessage(query));
+  else if (model && !model.unavailable) addMessage('assistant', intent === 'choose' ? fallback(model) : modelMessage(model, title));
+  else addMessage('assistant', localAnswer(fallback(), Boolean(model?.unavailable)));
+  $('#prompt').focus();
 }
 
 function caseDetails() {
@@ -177,7 +299,7 @@ function followupQuestion(question) {
   return follow;
 }
 
-function recommendationMessage(result, query) {
+function recommendationMessage(result, query, model = null) {
   const answer = el('div', 'answer is-recommendation');
   const question = nextQuestion(result);
   if (result.status === 'escalate') {
@@ -196,11 +318,15 @@ function recommendationMessage(result, query) {
     if (layers.length) answer.append(el('p', 'also-consider', `Also consider: ${layers.map(entry => entry.name).join(' · ')}`));
   }
 
+  if (model) answer.append(citedParagraphs(model));
+
   state.pendingQuestion = question;
   if (question) answer.append(followupQuestion(question));
 
   const codes = [...result.primary, ...result.complementary, ...result.alternatives].map(entry => entry.code);
-  const hits = codes.length ? evidenceFor(state.index, query, codes, 5) : [];
+  const ruleHits = codes.length ? evidenceFor(state.index, query, codes, 5) : [];
+  const hits = [...ruleHits, ...(model?.hits || [])]
+    .filter((hit, i, all) => all.findIndex(entry => entry.document.id === hit.document.id) === i);
   state.evidence = hits;
   if (codes.length || result.avoid.length) answer.append(sourceDetails(hits, reasons(result)));
   if (Object.keys(state.profile).length) answer.append(caseDetails());
@@ -210,7 +336,12 @@ function recommendationMessage(result, query) {
 function showRecommendation(query) {
   if (state.sourceStatus !== 'ready') return;
   state.mode = 'choose';
-  addMessage('assistant', recommendationMessage(assessCase(state.profile), query));
+  const assessment = assessCase(state.profile);
+  if (assessment.status === 'escalate' || !assessment.primary.length) {
+    addMessage('assistant', recommendationMessage(assessment, query));
+    return;
+  }
+  void modelTurn('choose', query, model => recommendationMessage(assessment, query, model));
 }
 
 function learningMessage(query, retrievalQuery = query) {
@@ -331,7 +462,7 @@ function answerToPending(text) {
 
 function send(text) {
   const query = text.trim().slice(0, 1200);
-  if (!query || state.sourceStatus !== 'ready') return false;
+  if (!query || state.sourceStatus !== 'ready' || state.busy) return false;
   const inferred = inferProfile(query);
   if (/\b(?:won't|will not|do not|never|no plans? to)\b.{0,35}\b(?:publish|release|share)\b.{0,60}\b(?:names?|identifiers?|pii)\b/i.test(query)) inferred.directRelease = 'no';
   const newCase = startsNewCase(query) || Boolean(inferred.goal && state.profile.goal && inferred.goal !== state.profile.goal && !isCaseContinuation(query));
@@ -346,10 +477,16 @@ function send(text) {
   }
   state.mode = intent;
   if (intent === 'legal') addMessage('assistant', legalMessage(query));
-  else if (intent === 'plan') { addMessage('assistant', planningMessage(query)); state.lastTopicQuery = query; }
+  else if (intent === 'plan') {
+    const assessment = assessCase(state.profile);
+    if (assessment.profile.goal && assessment.status === 'escalate') addMessage('assistant', recommendationMessage(assessment, query));
+    else void modelTurn('plan', query, () => planningMessage(query), 'Plan a small pilot');
+    state.lastTopicQuery = query;
+  }
   else if (intent === 'choose') { showRecommendation(query); state.lastTopicQuery = query; }
   else {
-    addMessage('assistant', learningMessage(query, followup ? `${state.lastTopicQuery} ${query}` : query));
+    const retrievalQuery = followup ? `${state.lastTopicQuery} ${query}` : query;
+    void modelTurn('learn', retrievalQuery, () => learningMessage(query, retrievalQuery));
     if (!followup) state.lastTopicQuery = query;
   }
   return true;
@@ -382,15 +519,21 @@ function exportSummary() {
 }
 
 function reset() {
+  state.turn += 1;
+  state.controller?.abort();
+  state.controller = null;
+  state.busy = false;
   state.profile = {};
   state.evidence = [];
   state.transcript = [];
   state.lastTopicQuery = '';
   state.pendingQuestion = null;
   state.mode = 'learn';
+  state.aiNoticeShown = false;
   messages.replaceChildren();
   document.body.classList.remove('has-messages');
   $('#prompt').value = '';
+  updateControls();
   setMascot('waving', 1200);
 }
 

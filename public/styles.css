@@ -140,7 +140,7 @@ button:disabled { cursor: default; opacity: .55; }
 .bubble {
   width: fit-content;
   max-width: min(100%, 780px);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
@@ -152,6 +152,7 @@ button:disabled { cursor: default; opacity: .55; }
   color: #17324d;
   white-space: pre-wrap;
 }
+.pending-bubble { color: var(--muted); font-size: 15px; }
 .answer { color: var(--ink); }
 .answer h2, .answer h3, .answer-title {
   margin: 0 0 11px;
@@ -162,8 +163,11 @@ button:disabled { cursor: default; opacity: .55; }
 }
 .answer h4 { color: var(--navy); font-size: 17px; margin: 16px 0 6px; }
 .answer p { margin: 0 0 12px; }
-.answer-lead, .source-answer { font-size: 17px; line-height: 1.6; }
+.answer-lead, .source-answer { font-size: 18px; line-height: 1.6; }
 .answer-lead { color: #30465e; }
+.model-explanation { margin-top: 15px; }
+.answer > .model-explanation:first-child, .answer-title + .model-explanation { margin-top: 0; }
+.model-explanation .source-answer:last-child { margin-bottom: 0; }
 .answer-warning {
   padding: 13px 16px;
   border-left: 4px solid #ad2940;
@@ -173,6 +177,7 @@ button:disabled { cursor: default; opacity: .55; }
 }
 .answer-warning strong { color: #7e1d30; }
 .answer-note, .answer-footnote { color: var(--muted); font-size: 15px; line-height: 1.55; }
+.ai-note { color: var(--muted); font-size: 13px; line-height: 1.45; margin-top: 14px !important; }
 .answer-badge, .answer-label, .answer-section-title, .status { display: none; }
 .inline-citation { color: var(--blue); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .pet-steps { display: grid; gap: 16px; margin: 16px 0 0; }
@@ -311,7 +316,7 @@ button:disabled { cursor: default; opacity: .55; }
   .starter-pills { margin-top: 22px; gap: 7px; }
   .starter-pills button { min-height: 44px; padding: 8px 11px; font-size: 13px; }
   .messages { padding-top: 22px; gap: 23px; }
-  .bubble, .answer-lead, .source-answer, .plan-steps li { font-size: 16px; }
+  .bubble, .answer-lead, .source-answer, .plan-steps li { font-size: 17px; }
   .answer h3 { font-size: 21px; }
   .choice { font-size: 16px; }
   .case-editor { grid-template-columns: 1fr; }

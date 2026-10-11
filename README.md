@@ -1,58 +1,55 @@
 # PETs Model
 
-A public-source chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains PETs, works through a use case, compares a layered architecture, and helps plan a reviewed pilot.
+A public-source chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains PETs, works through a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
 
-Hosted demo: [PETs Model](https://pets-model.fluffy-buddy-4572.chatgpt.site). Its access setting is managed separately from this source repository.
+Hosted demo: [PETs Model](https://pets-model.fluffy-buddy-4572.chatgpt.site). Site access is managed separately from this repository.
 
-## What works now
+## How it works
 
-- One chat for **understanding PETs**, **exploring a use case**, and **planning a pilot**, with short answers and more detail on demand.
-- In-chat questions and editable case details for data holders, movement, exact versus approximate linkage, controlled row access, released outputs, repeated analyses, sensitivity, technical capacity, and review of authority.
-- Multi-PET suggestions with rationale, caveats, alternatives, counterindications, a rule trace, and the next clarifying question.
-- A local retrieval index of 47 reviewed, original paraphrased passages from public MDI reports and pages, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed research. Informational answers link to the retrieved passages; architecture cards link to sources selected for each rule.
-- A clear escalation path for unreviewed authority, direct-identifier release, protected row-level release, and legal questions. Unknown case details stay unknown.
-- A downloadable case summary for human review. Case text stays in the browser and is not submitted to an application server.
+The app is built with Vinext and runs as a Cloudflare Worker on Sites. The browser loads 47 reviewed, original paraphrased passages from public sources. For an eligible question, the same-origin `/api/chat` endpoint selects relevant passages and uses Gemini to draft a short answer. The server checks that each returned citation belongs to the selected public evidence before sending the answer to the browser. Case recommendations also use inspectable rules for PET combinations, caveats, alternatives, and missing facts.
 
-The recommender is **decision support**. It does not certify legal compliance, identify an optimal PET, or replace privacy and technical experts. This is retrieval-augmented, extractive chat: information answers display retrieved source summaries, while use-case answers combine inspectable rules with claim-specific citations. There is no hosted LLM or fine-tuned model in this public version; see [the architecture](docs/ARCHITECTURE.md) for the private expert-annotation and model path.
+If the model is unavailable or its answer fails validation, the browser shows a local rule or retrieval answer. Legal-permission questions and certain proposed releases are routed to human review. A PET choice never establishes authority to use or disclose data. See [the architecture](docs/ARCHITECTURE.md) for the request flow and limits.
 
 ## Run locally
 
-This is a buildless static app. With Node 20+ for checks:
+Use Node.js 22.13 or newer:
 
 ```bash
-npm run check
-python3 -m http.server 5173 --directory dist
+npm ci
+cp .env.example .env.local
+npm run dev
 ```
 
-Open `http://localhost:5173/`. The app itself needs no package installation and no API key.
+Add your Gemini API key to the ignored `.env.local` file as `GEMINI_API_KEY=...`. `GEMINI_MODEL` is optional; leaving it blank uses the server default in `server/gemini.mjs`. Open `http://localhost:5173/`. The app can still answer from its browser-side public-source fallback without a key. Cloudflare documents [local Worker secrets](https://developers.cloudflare.com/workers/local-development/environment-variables/) for the Vite plugin.
+
+For a hosted deployment, configure `GEMINI_API_KEY` as a **server-side secret** in the Sites/Worker environment; optionally set `GEMINI_MODEL` there. Do not put the key in browser code or a `NEXT_PUBLIC_` variable. The production chat endpoint requires a Sites authenticated-user identity; the site access setting and secret configuration are separate. The key is needed for Gemini answers, while the public-source fallback remains available if the model cannot answer.
+
+## Privacy boundary
+
+Use hypothetical details. When Gemini answers are active, the browser sends the current message, up to four recent conversation turns, and structured case details to the app's server endpoint. The server sends those details, its rule summary, and selected **public** source summaries to Google's Gemini API. The request sets `store: false`, but this app cannot promise that the hosting platform or provider retains no request data. Do not enter protected records, direct identifiers, confidential partner information, or material you are not authorized to send to that provider.
+
+The app does not intentionally persist chats or use analytics. The transcript and case details are held in browser memory for the session; **Download** creates a local Markdown file that the visitor can review before sharing. The public retrieval corpus contains no internal project materials or example datasets. See [the content policy](docs/CONTENT_POLICY.md).
 
 ## Repository map
 
 | Path | Purpose |
 | --- | --- |
-| `dist/index.html`, `dist/styles.css`, `dist/app.mjs` | Responsive chatbot interface and local session state |
-| `dist/engine.mjs` | Transparent case extraction and layered recommendation rules |
-| `dist/retrieval.mjs` | BM25 retrieval with PET vocabulary normalization |
-| `dist/data/sources.json` | Reviewed public-source passages, jurisdiction, role, and provenance |
-| `data/eval_queries.json`, `scripts/` | Corpus validation and retrieval evaluation |
-| `tests/` | Safety-critical decision and retrieval checks |
+| `app/page.tsx`, `public/app.mjs`, `public/styles.css` | Chat page, browser state, and interface |
+| `app/api/chat/route.js`, `server/` | Worker endpoint, safety gates, retrieval-augmented answer, and Gemini transport |
+| `public/engine.mjs`, `public/retrieval.mjs` | Inspectable case rules and BM25 retrieval, also used for browser fallback |
+| `public/data/sources.json` | Reviewed public-source passages and provenance |
+| `data/eval_queries.json`, `scripts/`, `tests/` | Corpus checks and regression evaluation |
+| `vite.config.ts`, `build/sites-worker.ts` | Vinext, Cloudflare, and Sites integration |
 
-## Privacy and content policy
-
-The chatbot indexes **public PET resources only**. The attached internal project materials, partner notes, contact sheets, unpublished reports, and example datasets are absent from this repository and its deployed site. Public pilot reports linked from MDI are represented by short, original summaries with page provenance; report files are not copied into the app. The app uses no analytics or chat storage. A visitor should use hypothetical details; the case export remains on their own device until they choose to share it.
-
-See [CONTENT_POLICY.md](docs/CONTENT_POLICY.md) before adding sources. The source review date is a snapshot, not a promise that external guidance stays current. Legal and regulatory questions need current primary-source review by a qualified person.
-
-## Development and evaluation
+## Check the project
 
 ```bash
-npm run validate:corpus
-npm test
-npm run eval
+npm run check
+npm run build
 ```
 
-The included retrieval set has ten synthetic questions plus report-specific and safety tests. Passing these checks confirms the coded cases and retrieval expectations only; it does not validate PET selection against expert ground truth. Expert-labeled cases, privacy and utility measurements, broader source coverage, and review of every recommendation are needed before agency-facing deployment.
+`npm run check` validates corpus metadata and rule citations, runs decision, endpoint, and retrieval tests, and evaluates ten synthetic retrieval questions. These checks do not establish expert accuracy, legal compliance, privacy protection, or source currency. Expert-labeled cases and privacy, utility, and security reviews are needed before agency use.
 
 ## License
 
-Original code and original paraphrased summaries in this repository are MIT licensed. The user-supplied mascot images in `dist/assets/` are excluded from that license. External pages remain with their publishers and are linked for attribution. No code or prose was copied from the unlicensed private project archive provided as background.
+Original code and original paraphrased summaries in this repository are MIT licensed. The user-supplied mascot images in `public/assets/` are excluded from that license. External pages remain with their publishers and are linked for attribution. No code or prose was copied from the unlicensed private project archive provided as background.

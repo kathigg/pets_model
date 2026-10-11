@@ -2,40 +2,36 @@
 
 ```mermaid
 flowchart LR
-  A[Visitor question] --> B[Intent and explicit-fact extraction]
-  B --> C[Case profile and clarifying questions]
-  C --> D[Inspectable multi-PET rule engine]
-  A --> E[Public-source BM25 retrieval]
-  D --> F[Grounded answer composition]
-  E --> F
-  F --> G[Citations, caveats, alternatives, and human review]
-  G --> H[Local case-summary export]
+  A[Visitor question and case details] --> B[Browser rules and local source index]
+  B --> C[Same-origin POST /api/chat]
+  C --> D[Worker validation and review gates]
+  D --> E[Public-source retrieval and case rules]
+  E --> F[Gemini draft with allowed source IDs]
+  F --> G[Server citation validation]
+  G --> H[Cited answer in browser]
+  B --> I[Local source and rule fallback]
+  H --> J[Local case-summary download]
+  I --> J
 ```
 
-## Current public implementation
+## Current implementation
 
-Everything runs in the browser from static files. The visitor's text is not sent to an application endpoint. The source index is loaded from `dist/data/sources.json`; each chunk has an ID, original summary, title, URL, publisher, publication year when known, tags, jurisdiction, source role, and review date. Public report passages also carry a document title, section, page, and public MDI landing page. Normalized PET vocabulary and BM25 rank chunks. The response composer displays retrieved summaries and direct source links for information questions. Architecture rules cite selected passages that support each PET claim.
+Vinext serves the page and `/api/chat` from a Cloudflare Worker on Sites. The browser loads `public/data/sources.json`, keeps its transcript and editable case profile in memory, and can compose a deterministic fallback answer. The server imports the same 47-passage public corpus, normalizes PET vocabulary, and ranks evidence with BM25. For use cases, it combines retrieved evidence with the inspectable rules in `public/engine.mjs`; those rules distinguish goal, input privacy, output privacy, and governance, and can propose layered PETs plus counterindications.
 
-The deterministic engine separates **goal**, **input privacy**, **output privacy**, and **governance**. It can propose more than one PET: for example, linkage plus private computation plus an aggregate-output control. It also records when a method is poorly matched to a case, such as exact hashing alone for approximate matching. It asks for missing facts in the conversation instead of filling them in. Visitors can review and correct the inferred case details within the chat.
+The endpoint accepts a bounded JSON message, intent, case profile, and recent context. In production it requires a Sites authenticated-user identity. It checks request origin and size, limits requests per identity in Worker memory, and returns uncached JSON. The server blocks selected legal-permission and risky-release cases before a model call. For other requests with evidence and a configured key, it sends Gemini the question, recent context, structured case facts, rule summary, and selected **public** source summaries. The key stays in the Worker binding. The request sets `store: false` and asks for a short structured response citing only offered source IDs.
 
-Unknown or denied authority for protected records stops the technical recommendation. Proposed direct-identifier or protected row-level releases trigger human review. Legal questions route to jurisdiction-relevant guidance and human review. New use cases clear prior case facts. Every architecture remains exploratory until experts verify legal authority, the threat model, implementation feasibility, disclosure risk, utility, and source currency.
+The server rejects missing, invented, or malformed citations; the browser checks returned source IDs and URLs against its public corpus before display. This checks citation identity and format, not whether every sentence is substantively correct. The browser uses local retrieval and rule content if the model is missing, fails, or returns an unusable answer. Answers remain exploratory until experts verify authority, threat model, implementation feasibility, disclosure risk, utility, and source currency.
 
-## Content and safety boundary
+## Privacy and content boundary
 
-The deployed index contains only reviewed, publicly accessible resources. Project notes and data inventories inform the design but are excluded from retrieval and the public repository. Public pilot reports linked from MDI are summarized in short original passages; their files are not shipped. No personally identifiable information is needed to use the interface. Untrusted visitor text is rendered as text, never as HTML.
+The corpus contains short original summaries of reviewed, public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).
 
-The app does not infer permission under FERPA or other laws from a PET choice. PETs can reduce a risk; legal authority and governance must be established separately. “Trusted research environment” (governed access) and “trusted execution environment” (hardware isolation) are separate categories. Synthetic data are not presumed private, and a hash is not presumed anonymous.
+Visitor text is rendered as text rather than HTML. The app does not intentionally store a server-side transcript or use analytics, and **Download** creates a local file. However, Gemini-enabled requests pass through the hosting platform and Google; this code alone cannot guarantee their logging or retention practices. Visitors should provide hypothetical details and avoid protected or confidential information.
 
-## Evaluation today
+The engine does not infer permission under FERPA or other laws from a PET choice. A trusted research environment and a trusted execution environment are distinct. Synthetic data are not presumed private, and a hash is not presumed anonymous. Some high-risk cases are intercepted by coded review gates; those gates are not a complete privacy or legal review.
 
-`npm run check` validates source metadata and rule citations, runs decision and retrieval tests, and checks recall@5 on ten synthetic questions. The repository includes scenarios for fuzzy linkage, authority escalation, direct-identifier release, report-specific retrieval, and unrelated queries. This is regression coverage, not expert validation. The 47-passage source set is manually curated and incomplete; a production knowledge program needs review owners, update cadence, version history, and source-level approvals.
+## Evaluation and next steps
 
-## Path to the intended expert system
+`npm run check` validates source metadata and rule citations, tests decision and endpoint behavior, and checks retrieval on ten synthetic questions. The corpus is manually curated and incomplete. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
 
-1. **Private case processing.** In a controlled environment, turn authorized meeting notes into multiple case-level needs records. Remove unnecessary personal and partner detail. Record provenance and consent for each use.
-2. **Expert annotation.** Let PET specialists assign primary and complementary methods, counterindications, missing facts, and an ideal architecture. Use at least two reviewers for ambiguous cases and adjudicate disagreements.
-3. **Evaluation before model selection.** Freeze a test set of expert cases and score recommendation precision, omitted caveats, unsafe overconfidence, citation support, and abstention. Include multi-PET architectures and source-currency failures.
-4. **Private model integration.** A provider interface can replace only the wording and extraction layer at first. Keep recommendation rules, citations, and escalation independently checkable. Fine-tune an appropriately licensed open model only after enough expert-labeled cases exist and privacy controls are approved.
-5. **Feedback and release.** Route exported cases and proposed answers through human review, add approved cases to the evaluation set, and release changes only after regression and domain review.
-
-The public static site is a team demonstration and knowledge tool. Private annotations, model training, automatic retraining, and protected-data ingestion are separate work because they require governance, ground truth, compute, and expert approval that are not present in the public materials.
+Before agency-facing use, prepare authorized and de-identified case records; have PET specialists label primary and complementary methods, counterindications, and missing facts; freeze an expert test set; and measure recommendation quality, unsupported claims, abstention, privacy risk, and utility. Establish source review owners, update cadence, version history, and release approval. The current Gemini integration drafts wording from public evidence; it is not trained on private materials and does not replace this expert evaluation.

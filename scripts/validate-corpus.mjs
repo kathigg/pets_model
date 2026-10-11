@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { PETS } from '../dist/engine.mjs';
+import { PETS } from '../public/engine.mjs';
 
-const docs = JSON.parse(readFileSync(new URL('../dist/data/sources.json', import.meta.url), 'utf8'));
+const docs = JSON.parse(readFileSync(new URL('../public/data/sources.json', import.meta.url), 'utf8'));
 const hosts = new Set(['mdi.georgetown.edu', 'www.nist.gov', 'csrc.nist.gov', 'nvlpubs.nist.gov', 'ico.org.uk', 'studentprivacy.ed.gov', 'www.gov.uk', 'pmc.ncbi.nlm.nih.gov', 'georgetown.app.box.com']);
 const publicReportShares = new Set([
   '/s/vid4zxlg2khg79v8vrjsjbym1g25c04w', // DC ETEP, linked from MDI's public use-case page

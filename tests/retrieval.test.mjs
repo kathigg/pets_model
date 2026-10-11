@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createIndex, retrieve, evidenceFor } from '../dist/retrieval.mjs';
+import { createIndex, retrieve, evidenceFor } from '../public/retrieval.mjs';
 
-const corpus = JSON.parse(readFileSync(new URL('../dist/data/sources.json', import.meta.url), 'utf8'));
+const corpus = JSON.parse(readFileSync(new URL('../public/data/sources.json', import.meta.url), 'utf8'));
 const index = createIndex(corpus);
 
 test('public corpus has unique source chunks and no private inventory URLs', () => {
