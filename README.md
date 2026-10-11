@@ -55,4 +55,4 @@ The included retrieval set has ten synthetic questions plus report-specific and 
 
 ## License
 
-Original code and original paraphrased summaries in this repository are MIT licensed. External pages remain with their publishers and are linked for attribution. No code or prose was copied from the unlicensed private project archive provided as background.
+Original code and original paraphrased summaries in this repository are MIT licensed. The user-supplied mascot images in `dist/assets/` are excluded from that license. External pages remain with their publishers and are linked for attribution. No code or prose was copied from the unlicensed private project archive provided as background.

@@ -13,6 +13,22 @@ const state = {
   mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '', pendingQuestion: null
 };
 const messages = $('#messages');
+const mascot = $('#mascot');
+let mascotTimer;
+let mascotReplyTimer;
+
+function setMascot(action, duration = 0) {
+  clearTimeout(mascotTimer);
+  clearTimeout(mascotReplyTimer);
+  mascot.dataset.action = action;
+  if (duration) mascotTimer = setTimeout(() => { mascot.dataset.action = 'idle'; }, duration);
+}
+
+function reactToAnswer(action) {
+  clearTimeout(mascotTimer);
+  clearTimeout(mascotReplyTimer);
+  mascotReplyTimer = setTimeout(() => setMascot(action, action === 'jumping' ? 1450 : 1200), 240);
+}
 
 function safeLink(url, label, className = '') {
   const link = el('a', className, label);
@@ -48,6 +64,10 @@ function addMessage(kind, content) {
   row.append(avatar, bubble);
   messages.append(row);
   document.body.classList.add('has-messages');
+  if (kind === 'user') setMascot('waiting');
+  else if (bubble.querySelector('.answer-warning')) reactToAnswer('review');
+  else if (bubble.querySelector('.pet-step')) reactToAnswer('jumping');
+  else reactToAnswer('waving');
   state.transcript.push({
     role: kind,
     text: (bubble.innerText || bubble.textContent || '').trim(),
@@ -371,6 +391,7 @@ function reset() {
   messages.replaceChildren();
   document.body.classList.remove('has-messages');
   $('#prompt').value = '';
+  setMascot('waving', 1200);
 }
 
 $('#composer').addEventListener('submit', event => {
@@ -386,11 +407,12 @@ $('#prompt').addEventListener('keydown', event => {
   }
 });
 document.querySelectorAll('[data-prompt]').forEach(button => button.addEventListener('click', () => send(button.dataset.prompt)));
-$('#export').addEventListener('click', exportSummary);
+$('#export').addEventListener('click', () => { exportSummary(); setMascot('waving', 1200); });
 $('#reset').addEventListener('click', reset);
 
 reset();
 setSourceStatus('loading');
+setMascot('waiting');
 fetch('./data/sources.json', { cache: 'no-cache' }).then(response => {
   if (!response.ok) throw new Error(`Sources unavailable (${response.status})`);
   return response.json();
@@ -399,8 +421,10 @@ fetch('./data/sources.json', { cache: 'no-cache' }).then(response => {
   if (!state.index.docs.length) throw new Error('No source passages loaded');
   $('#source-count').textContent = `${state.index.docs.length} public sources`;
   setSourceStatus('ready');
+  setMascot('waving', 1200);
 }).catch(() => {
   setSourceStatus('failed');
   $('#source-count').textContent = 'Sources unavailable';
   addMessage('assistant', 'The public sources did not load. Refresh the page to try again.');
+  setMascot('failed', 1500);
 });

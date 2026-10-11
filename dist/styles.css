@@ -63,20 +63,18 @@ a { color: var(--blue); }
   letter-spacing: -.035em;
   white-space: nowrap;
 }
-.brand-mark {
-  display: grid;
-  grid-template-columns: repeat(2, 6px);
-  grid-template-rows: repeat(2, 6px);
-  align-content: center;
-  justify-content: center;
-  gap: 5px;
-  width: 31px;
-  height: 31px;
-  border-radius: 8px;
-  background: var(--navy);
+.brand-mascot {
+  display: block;
+  flex: none;
+  width: 62px;
+  height: 67px;
+  background: url('./assets/bmo-idle.gif') center / contain no-repeat;
 }
-.brand-mark span { border-radius: 50%; background: var(--cyan); }
-.brand-mark span:last-child { background: #fff; }
+.brand-mascot[data-action="waiting"] { background-image: url('./assets/bmo-waiting.gif'); }
+.brand-mascot[data-action="review"] { background-image: url('./assets/bmo-review.gif'); }
+.brand-mascot[data-action="waving"] { background-image: url('./assets/bmo-waving.gif'); }
+.brand-mascot[data-action="jumping"] { background-image: url('./assets/bmo-jumping.gif'); }
+.brand-mascot[data-action="failed"] { background-image: url('./assets/bmo-failed.gif'); }
 .top-actions { display: flex; align-items: center; gap: 8px; }
 .top-actions button {
   min-height: 36px;
@@ -301,7 +299,7 @@ button:disabled { cursor: default; opacity: .55; }
 @media (max-width: 650px) {
   .topbar { height: 64px; padding: 0 15px; gap: 9px; }
   .brand { gap: 8px; font-size: 17px; }
-  .brand-mark { width: 27px; height: 27px; }
+  .brand-mascot { width: 52px; height: 56px; }
   .top-actions { gap: 2px; }
   .top-actions button { font-size: 12px; }
   .quiet-button { padding: 7px 6px; }
@@ -324,10 +322,15 @@ button:disabled { cursor: default; opacity: .55; }
 
 @media (max-width: 370px) {
   .brand { font-size: 15px; }
-  .brand-mark { display: none; }
+  .brand-mascot { width: 47px; height: 51px; }
   .topbar { padding: 0 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .brand-mascot {
+    background-image: url('./assets/bmo-spritesheet.webp') !important;
+    background-size: 800% 1100%;
+    background-position: left top;
+  }
 }
