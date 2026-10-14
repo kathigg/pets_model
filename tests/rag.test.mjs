@@ -193,3 +193,22 @@ test('provider failure returns an unavailable response without provider details'
   assert.equal(response.status, 'unavailable');
   assert.doesNotMatch(JSON.stringify(response), /secret provider detail/);
 });
+
+test('service identity is requested only after public evidence and privacy review gates', async () => {
+  const model = recordingModel(ids => [{ text: 'A cited answer.', source_ids: [ids[0]] }]);
+  let tokenCalls = 0;
+  const options = {
+    projectId: 'pets-model-123',
+    accessTokenProvider: async () => { tokenCalls++; return 'test-access-token'; },
+    fetchImpl: model.fetchImpl
+  };
+  const review = await answerWithRag({ message: 'Can we share student records under FERPA?', intent: 'learn' }, options);
+  assert.equal(review.reason, 'human_review_required');
+  const noEvidence = await answerWithRag({ message: 'volcanoes astrophysics xylophone', intent: 'learn' }, options);
+  assert.equal(noEvidence.reason, 'no_evidence');
+  assert.equal(tokenCalls, 0);
+  const answer = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' }, options);
+  assert.equal(answer.status, 'ok');
+  assert.equal(tokenCalls, 1);
+  assert.equal(model.calls[0].options.headers.authorization, 'Bearer test-access-token');
+});

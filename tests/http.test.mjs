@@ -84,3 +84,19 @@ test('anonymous host rate key is supplied by the server, not a visitor identity 
     requireIdentity: false, rateKey: 'visitor-b', now: 2000031, answer
   })).status, 200);
 });
+
+test('anonymous Cloud Run boundary passes service identity to the RAG layer', async () => {
+  let received;
+  const accessTokenProvider = async () => 'test-access-token';
+  const response = await handleChatRequest(request(valid, { 'oai-authenticated-user-id': '' }), {
+    requireIdentity: false, rateKey: 'cloud-run-test', projectId: 'pets-model-123',
+    accessTokenProvider,
+    answer: async (_input, options) => {
+      received = options;
+      return { status: 'ok', segments: [], sources: [] };
+    }
+  });
+  assert.equal(response.status, 200);
+  assert.equal(received.accessTokenProvider, accessTokenProvider);
+  assert.equal(received.projectId, 'pets-model-123');
+});

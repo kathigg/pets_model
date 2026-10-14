@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+.next
+.wrangler
+dist
+node_modules
+work
+*.zip
+*.tar
+*.tar.gz
+*.key
+*.pem

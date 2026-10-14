@@ -4,15 +4,23 @@
 
 # PETs Model
 
-A public-source chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains PETs, works through a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
+A chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains options, asks for the facts needed to assess a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
 
-Current preview: [PETs Model](https://pets-model.fluffy-buddy-4572.chatgpt.site). Its access is managed separately from this repository. A public deployment outside ChatGPT is prepared but not yet connected to a hosting account.
+**Hosting status:** The current [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) has separate access settings and uses the public-source browser fallback. The Google Cloud Run version is prepared in this repository but **has not been deployed**. The intended public link will come from Cloud Run after a Google Cloud project is connected.
 
-## How it works
+## How the chatbot works
 
-The app is built with Vinext and runs as a Cloudflare Worker on Sites. The browser loads 47 reviewed, original paraphrased passages from public sources. For an eligible question, the same-origin `/api/chat` endpoint selects relevant passages and uses Gemini to draft a short answer. The server checks that each returned citation belongs to the selected public evidence before sending the answer to the browser. Case recommendations also use inspectable rules for PET combinations, caveats, alternatives, and missing facts.
+The app uses 47 reviewed, original summaries of public sources. For each eligible question, it retrieves relevant passages and asks Gemini on the server to draft a short answer. The server checks citations against the passages it supplied. Inspectable rules add PET combinations, caveats, alternatives, and missing facts for use cases. If Gemini is unavailable or fails validation, the browser shows a local rule or retrieval answer.
 
-If the model is unavailable or its answer fails validation, the browser shows a local rule or retrieval answer. Legal-permission questions and certain proposed releases are routed to human review. A PET choice never establishes authority to use or disclose data. See [the architecture](docs/ARCHITECTURE.md) for the request flow and limits.
+Legal-permission questions and selected risky releases go to human review. A PET choice does not establish authority to use or disclose data. See [the architecture](docs/ARCHITECTURE.md) for the request flow and limits.
+
+## Publish on Google Cloud Run
+
+The selected public host is [Google Cloud Run](https://docs.cloud.google.com/run/docs/overview). It serves the site and `/api/chat` together. Cloud Run uses a dedicated [service identity](https://docs.cloud.google.com/run/docs/securing/service-identity) to call the project-scoped Gemini API in Vertex AI. **No Gemini API key needs to be copied into ChatGPT, Codex, GitHub, or Cloud Run.**
+
+Deployment still needs an approved Google Cloud project with an [active billing account](https://docs.cloud.google.com/docs/get-started/learn-about-billing), the Vertex AI API enabled, and a dedicated service account permitted to call Gemini. Vertex model access alone does not authorize deploying a public Cloud Run service. Connecting [this GitHub repository](https://github.com/kathigg/pets_model) to Cloud Run can automatically redeploy pushes to `main` after a project administrator sets it up. The exact steps and required approval are in [Deploy to Google Cloud Run](docs/DEPLOY_GOOGLE_CLOUD_RUN.md).
+
+Cloud Run has a [free allowance](https://cloud.google.com/run/pricing), but a billing account is still required and hosting can incur charges beyond that allowance. [Vertex AI model use](https://cloud.google.com/vertex-ai/generative-ai/pricing) is billed separately. A public link can receive traffic beyond the intended team. The app limits model calls to 100 per UTC day **per process**; a restart or overlapping revision resets or duplicates that count. These controls are not a guaranteed dollar cap. An approved separate project would allow [service-level spend caps](https://docs.cloud.google.com/billing/docs/how-to/budgets-spend-caps) without interrupting other workloads.
 
 ## Run locally
 
@@ -24,21 +32,11 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Add a Vertex AI API key to the ignored `.env.local` file as `GEMINI_API_KEY=...`. By default the app uses Vertex AI express mode and `gemini-3-flash-preview`. For a standard Google Cloud project, the key must be [bound to a service account](https://docs.cloud.google.com/docs/authentication/api-keys#authorization_keys); also set `VERTEX_PROJECT_ID` and, if needed, `VERTEX_LOCATION` (default `global`). `GEMINI_MODEL` can select a different model your account supports. Open `http://localhost:5173/`. The browser-side public-source fallback works without a key. Cloudflare documents [local Worker secrets](https://developers.cloudflare.com/workers/local-development/environment-variables/) for the Vite plugin.
-
-The existing GitHub Environment `Gemini` holds `GEMINI_API_KEY`. GitHub Actions can pass it directly into a Cloudflare Worker secret at deployment. The key does not need to be stored in ChatGPT or committed to this repository. The current ChatGPT Sites preview has no access to that secret and still uses the browser's public-source fallback.
-
-## Public hosting outside ChatGPT
-
-The lightweight [Cloudflare Worker](cloudflare/worker.mjs) serves `public/` and runs `/api/chat` on the same origin. Its static pages do not invoke Worker code. The API applies a best-effort limit of six requests per minute per visitor, and a SQLite-backed Durable Object caps model-call attempts at 100 per UTC day across all visitors. Requests and model output are size-bounded. The cap is a call count, not a dollar budget. When the model is unavailable or the limit is reached, the browser falls back to local public-source answers.
-
-The deployment is ready to use through [Deploy public chatbot](.github/workflows/deploy-public.yml). It requires a Cloudflare Free account and two additional secrets in the existing GitHub `Gemini` Environment: `CLOUDFLARE_ACCOUNT_ID` and a scoped `CLOUDFLARE_API_TOKEN` able to edit Workers. Restrict that Environment to deployments from `main`. Run the workflow from `main` to publish `https://pets-model.<account-subdomain>.workers.dev`; anyone with that link can open it. The workflow reads `GEMINI_API_KEY` only inside the GitHub runner and writes it as a Cloudflare Worker secret. No secret is included in the static assets, repository, or build output.
-
-The default transport uses the Vertex AI Express endpoint. A standard Vertex project key also needs `VERTEX_PROJECT_ID` and optionally `VERTEX_LOCATION` configured as Worker secrets. A Google AI Studio Gemini Developer API key uses a different endpoint and cannot be assumed to work with this Vertex configuration. Confirm the key type with a live request before sharing the public link. Hosting may fit Cloudflare's free allowance; Gemini usage is billed separately. A dedicated provider billing cap is recommended as a second safeguard.
+Open `http://localhost:5173/`. The public-source fallback works without a key. Gemini answers on Cloud Run use its Google service identity, so no API key needs to be placed in this checkout or Codex.
 
 ## Privacy boundary
 
-Use hypothetical details. When Gemini answers are active, the browser sends the current message, up to four recent conversation turns, and structured case details to the app's server endpoint. The server sends those details, its rule summary, and selected **public** source summaries to Vertex AI. This app cannot promise that the hosting platform or provider retains no request data. Do not enter protected records, direct identifiers, confidential partner information, or material you are not authorized to send to that provider.
+Use hypothetical details. When Gemini answers are active, the browser sends the current message, up to four recent conversation turns, and structured case details to the app's server endpoint. The server sends those details, its rule summary, and selected **public** source summaries to Vertex AI. This app cannot promise that the hosting platform or Google retains no request data. Do not enter protected records, direct identifiers, confidential partner information, or material you are not authorized to send to that provider.
 
 The app does not intentionally persist chats or use analytics. The transcript and case details are held in browser memory for the session; **Download** creates a local Markdown file that the visitor can review before sharing. The public retrieval corpus contains no internal project materials or example datasets. See [the content policy](docs/CONTENT_POLICY.md).
 
@@ -46,13 +44,14 @@ The app does not intentionally persist chats or use analytics. The transcript an
 
 | Path | Purpose |
 | --- | --- |
-| `app/page.tsx`, `public/app.mjs`, `public/styles.css` | Chat page, browser state, and interface |
-| `app/api/chat/route.js`, `server/` | Site endpoint, safety gates, retrieval-augmented answer, and Gemini transport |
-| `cloudflare/`, `wrangler.public.jsonc`, `.github/workflows/deploy-public.yml` | Public host, shared model-call budget, and GitHub deployment |
-| `public/engine.mjs`, `public/retrieval.mjs` | Inspectable case rules and BM25 retrieval, also used for browser fallback |
+| `public/app.mjs`, `public/styles.css`, `public/assets/` | Chat interface and mascot |
+| `cloud-run/`, `Dockerfile` | Google Cloud Run public host and service identity |
+| `server/`, `public/engine.mjs`, `public/retrieval.mjs` | Review gates, retrieval, PET rules, and Gemini transport |
 | `public/data/sources.json` | Reviewed public-source passages and provenance |
 | `data/eval_queries.json`, `scripts/`, `tests/` | Corpus checks and regression evaluation |
-| `vite.config.ts`, `build/sites-worker.ts` | Vinext, Cloudflare, and Sites integration |
+| `app/`, `vite.config.ts`, `build/sites-worker.ts` | Existing Sites preview |
+
+The repository also retains an unused Cloudflare deployment path. Google Cloud Run is the selected public host.
 
 ## Check the project
 

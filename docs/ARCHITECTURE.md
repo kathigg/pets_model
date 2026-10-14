@@ -2,37 +2,39 @@
 
 ```mermaid
 flowchart LR
-  A[Visitor question and case details] --> B[Browser rules and local source index]
+  A[Visitor question and case details] --> B[Browser rules and public-source index]
   B --> C[Same-origin POST /api/chat]
-  C --> D[Worker validation and review gates]
-  D --> E[Public-source retrieval and case rules]
-  E --> F[Gemini draft with allowed source IDs]
-  F --> G[Server citation validation]
-  G --> H[Cited answer in browser]
+  C --> D[Input checks and human-review gates]
+  D --> E[Public-source retrieval and PET rules]
+  E --> F[Vertex AI Gemini draft]
+  F --> G[Citation validation]
+  G --> H[Short cited answer]
   B --> I[Local source and rule fallback]
   H --> J[Local case-summary download]
   I --> J
 ```
 
-## Current implementation
+## Answer path
 
-Vinext serves the page and `/api/chat` from a Cloudflare Worker on Sites. The browser loads `public/data/sources.json`, keeps its transcript and editable case profile in memory, and can compose a deterministic fallback answer. The server imports the same 47-passage public corpus, normalizes PET vocabulary, and ranks evidence with BM25. For use cases, it combines retrieved evidence with the inspectable rules in `public/engine.mjs`; those rules distinguish goal, input privacy, output privacy, and governance, and can propose layered PETs plus counterindications.
+The browser loads `public/data/sources.json`, keeps its transcript and editable case profile in memory, and can compose a deterministic fallback answer. The server imports the same 47-passage public corpus, normalizes PET vocabulary, and ranks evidence with BM25. For use cases, it combines retrieved evidence with the inspectable rules in `public/engine.mjs`. Those rules distinguish goal, input privacy, output privacy, and governance, and can propose layered PETs with counterindications.
 
-The endpoint accepts a bounded JSON message, intent, case profile, and recent context. In production it requires a Sites authenticated-user identity. It checks request origin and size, limits requests per identity in Worker memory, and returns uncached JSON. The server blocks selected legal-permission and risky-release cases before a model call. For other requests with evidence and a configured key, it sends Vertex AI the question, recent context, structured case facts, rule summary, and selected **public** source summaries. The key stays in the Worker binding. Express mode uses the publisher model endpoint; a standard project key also needs its project ID and optional location. The request asks for a short structured response citing only offered source IDs.
+The shared `server/http.mjs` boundary accepts a bounded JSON message, intent, case profile, and recent context. It checks request origin and size and applies a best-effort in-memory request limit. The origin check is a browser safeguard, not authentication against arbitrary HTTP clients. `server/rag.mjs` blocks selected legal-permission and risky-release cases before a model call. For other questions with evidence and a configured credential, it sends Vertex AI the question, recent context, structured case facts, rule summary, and selected **public** source summaries. It requests a short structured answer with source IDs.
 
-The server rejects missing, invented, or malformed citations; the browser checks returned source IDs and URLs against its public corpus before display. This checks citation identity and format, not whether every sentence is substantively correct. The browser uses local retrieval and rule content if the model is missing, fails, or returns an unusable answer. Answers remain exploratory until experts verify authority, threat model, implementation feasibility, disclosure risk, utility, and source currency.
+The server rejects missing, invented, or malformed citations. The browser checks returned source IDs and URLs against its public corpus before display. These checks confirm citation identity and format; they cannot prove that every sentence is substantively correct. The browser uses local retrieval and rule content if the model is unavailable or returns an unusable answer.
 
-## Public deployment path
+## Hosts and deployment status
 
-The repository also includes a lightweight Cloudflare Worker for an anonymous, shareable deployment outside ChatGPT. Cloudflare serves the existing `public/` files directly; only `/api/chat` invokes the Worker. The Worker uses Cloudflare's visitor IP header as a hashed rate-limit key and does not send it to Gemini. A native limiter allows six requests per minute per visitor. A single SQLite-backed Durable Object reserves a model-call attempt immediately before each paid request and enforces a shared ceiling of 100 attempts per UTC day. Failed provider calls count toward that ceiling; review-gated and evidence-free questions do not. If the limiter or budget is unavailable, the Worker does not call Gemini. The browser falls back to local public-source answers.
+**Google Cloud Run is the selected public host.** The repository-root `Dockerfile` packages `public/`, `server/`, and `cloud-run/`. The Cloud Run adapter serves static files and `/api/chat` from one origin. It uses the Cloud Run metadata server to obtain an OAuth access token for a dedicated service identity, then calls the project-scoped Vertex AI Gemini endpoint. An administrator should grant that identity a custom role with `aiplatform.endpoints.predict` for Gemini calls. A Gemini API key is not needed for this route. The Cloud Run application is prepared in code but **is not deployed yet**. See [the setup guide](DEPLOY_GOOGLE_CLOUD_RUN.md).
 
-The GitHub deployment workflow reads `GEMINI_API_KEY` from the `Gemini` Environment and stores it as a Cloudflare Worker runtime secret. The public host is not deployed until a Cloudflare account and scoped deployment token are connected. The current Sites preview keeps its existing access setting and has no Gemini key. The daily ceiling constrains this app's paid call attempts; it is not a guaranteed spend cap for the Google account or other applications using that key.
+The Cloud Run endpoint is intended to allow public access. It allows 30 valid chat requests per ten minutes across all visitors **per process**, and `cloud-run/budget.mjs` reserves at most 100 paid model calls per UTC day per process. The adapter uses one server-controlled rate key; visitor-supplied forwarding headers cannot raise the limit. Both counters reset on restart and duplicate if instances or revisions overlap. Request and model output sizes are bounded. A maximum instance setting can curb scaling but does not place a hard cap on Vertex AI charges. The browser falls back to public-source answers if the provider is unavailable.
+
+The existing Sites preview uses Vinext and a Cloudflare Worker. Its `/api/chat` route requires a Sites authenticated-user identity. It has no access to the GitHub Environment key, so the preview uses the browser's public-source fallback. An additional Cloudflare public-deployment implementation remains in the repository but is **not** the selected host.
 
 ## Privacy and content boundary
 
 The corpus contains short original summaries of reviewed, public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).
 
-Visitor text is rendered as text rather than HTML. The app does not intentionally store a server-side transcript or use analytics, and **Download** creates a local file. However, Gemini-enabled requests pass through the hosting platform and Google; this code alone cannot guarantee their logging or retention practices. Visitors should provide hypothetical details and avoid protected or confidential information.
+Visitor text is rendered as text rather than HTML. The app does not intentionally store a server-side transcript or use analytics, and **Download** creates a local file. Gemini-enabled requests pass through the host and Google; this code alone cannot guarantee their logging or retention practices. Visitors should provide hypothetical details and avoid protected or confidential information.
 
 The engine does not infer permission under FERPA or other laws from a PET choice. A trusted research environment and a trusted execution environment are distinct. Synthetic data are not presumed private, and a hash is not presumed anonymous. Some high-risk cases are intercepted by coded review gates; those gates are not a complete privacy or legal review.
 

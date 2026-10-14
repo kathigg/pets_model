@@ -112,7 +112,7 @@ function validateDraft(draft, hits) {
 }
 
 /** Public-source RAG with deterministic privacy gates and validated citations. */
-export async function answerWithRag(input, { apiKey, model, projectId, location, fetchImpl, reserveModelCall } = {}) {
+export async function answerWithRag(input, { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, reserveModelCall } = {}) {
   const message = typeof input?.message === 'string' ? input.message.trim().slice(0, MAX_MESSAGE) : '';
   let intent = ['learn', 'choose', 'plan'].includes(input?.intent) ? input.intent : 'learn';
   if (!message) return result('insufficient', 'Please ask a question or describe your use case.', 'empty_message');
@@ -138,7 +138,7 @@ export async function answerWithRag(input, { apiKey, model, projectId, location,
   const context = compactContext(input?.context);
   const hits = evidenceForTask(intent, message, assessment, context);
   if (!hits.length) return result('insufficient', 'I could not find enough public-source evidence for that question.', 'no_evidence');
-  if (!apiKey) return result('unavailable', 'The model is not connected yet.', 'missing_api_key');
+  if (!apiKey && !accessTokenProvider) return result('unavailable', 'The model is not connected yet.', 'missing_credential');
   try {
     if (reserveModelCall && !(await reserveModelCall())) {
       return result('unavailable', 'The model has reached its daily limit.', 'daily_limit');
@@ -146,7 +146,7 @@ export async function answerWithRag(input, { apiKey, model, projectId, location,
     const draft = await generateGeminiDraft(
       taskPrompt({ message, intent, profile, context, assessment, hits }),
       hits.map(hit => hit.document.id),
-      { apiKey, model, projectId, location, fetchImpl }
+      { apiKey, accessTokenProvider, model, projectId, location, fetchImpl }
     );
     return validateDraft(draft, hits) || result('unavailable', 'I could not verify the answer against the public sources.', 'invalid_citations');
   } catch {

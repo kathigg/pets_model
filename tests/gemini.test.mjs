@@ -44,3 +44,37 @@ test('project-scoped Vertex request uses its project and location, with 2.5 thin
   assert.equal(request.url, 'https://aiplatform.googleapis.com/v1/projects/pets-model-123/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent');
   assert.deepEqual(request.body.generationConfig.thinkingConfig, { thinkingBudget: 1024 });
 });
+
+test('Cloud Run service identity uses a bearer token for project-scoped Vertex', async () => {
+  let request;
+  let tokenCalls = 0;
+  await generateGeminiDraft('Prompt', ['source-one'], {
+    projectId: 'pets-model-123',
+    accessTokenProvider: async () => { tokenCalls++; return 'test-access-token'; },
+    fetchImpl: async (url, options) => {
+      request = { url, headers: options.headers };
+      return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{
+        text: JSON.stringify({ segments: [{ text: 'Answer.', source_ids: ['source-one'] }] })
+      }] } }] });
+    }
+  });
+  assert.equal(tokenCalls, 1);
+  assert.match(request.url, /projects\/pets-model-123\/locations\/global\/publishers\/google\/models/);
+  assert.equal(request.headers.authorization, 'Bearer test-access-token');
+  assert.equal(request.headers['x-goog-api-key'], undefined);
+  assert.doesNotMatch(request.url, /test-access-token/);
+});
+
+test('service identity fails closed when no project or token is available', async () => {
+  let calls = 0;
+  const accessTokenProvider = async () => { calls++; return ''; };
+  const fetchImpl = async () => { throw new Error('Model must not be called'); };
+  await assert.rejects(generateGeminiDraft('Prompt', ['source-one'], {
+    accessTokenProvider, fetchImpl
+  }), /Missing model credential/);
+  assert.equal(calls, 0);
+  await assert.rejects(generateGeminiDraft('Prompt', ['source-one'], {
+    projectId: 'pets-model-123', accessTokenProvider, fetchImpl
+  }), /Missing model credential/);
+  assert.equal(calls, 1);
+});

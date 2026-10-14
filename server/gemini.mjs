@@ -28,9 +28,11 @@ function responseSchema(sourceIds) {
 }
 
 export async function generateGeminiDraft(prompt, sourceIds, {
-  apiKey, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch
+  apiKey, accessTokenProvider, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch
 } = {}) {
-  if (!apiKey || typeof apiKey !== 'string') throw new Error('Missing model credential');
+  if (!apiKey && (!accessTokenProvider || !projectId)) throw new Error('Missing model credential');
+  if (apiKey && typeof apiKey !== 'string') throw new Error('Invalid model credential');
+  if (accessTokenProvider && typeof accessTokenProvider !== 'function') throw new Error('Invalid token provider');
   if (!/^[a-z0-9][a-z0-9.-]{0,79}$/i.test(model)) throw new Error('Invalid model name');
   if (projectId && !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(projectId)) throw new Error('Invalid Vertex project ID');
   if (projectId && !/^(?:global|[a-z]+-[a-z]+[0-9])$/.test(location)) throw new Error('Invalid Vertex location');
@@ -50,9 +52,17 @@ export async function generateGeminiDraft(prompt, sourceIds, {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
+    const headers = { 'content-type': 'application/json' };
+    if (apiKey) {
+      headers['x-goog-api-key'] = apiKey;
+    } else {
+      const token = await accessTokenProvider();
+      if (typeof token !== 'string' || !token.trim()) throw new Error('Missing model credential');
+      headers.authorization = `Bearer ${token}`;
+    }
     const response = await fetchImpl(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+      headers,
       body: JSON.stringify(request),
       signal: controller.signal
     });
