@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/assets/bmo-waving.gif" alt="BMO waving" width="96">
+  <img src="public/assets/bmo-idle.gif" alt="BMO blinking" width="96">
 </p>
 
 # PETs Model
