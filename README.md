@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/assets/bmo-waving.gif" alt="BMO waving" width="96">
+</p>
+
 # PETs Model
 
 A public-source chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains PETs, works through a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
