@@ -1,4 +1,4 @@
-/** Local, inspectable retrieval over reviewed public-source passages. */
+/** Local, inspectable retrieval over draft public-source summaries. */
 import { PETS } from './engine.mjs';
 const STOP = new Set('a an and are as at be by can do does for from has have how i in into is it its of on or our the their this to use we what when where which who why will with would your you data privacy private technology technologies pet pets'.split(' '));
 const ALIASES = new Map(Object.entries({

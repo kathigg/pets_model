@@ -94,6 +94,7 @@ function sourceDetails(hits, extra) {
   const details = el('details', 'answer-details');
   details.append(el('summary', '', extra ? 'Why and sources' : 'Sources'));
   const content = el('div', 'answer-detail-content');
+  content.append(el('p', 'review-note', 'Draft summaries. Check the original sources.'));
   if (extra) content.append(extra);
   const unique = hits.filter((hit, i) => hits.findIndex(x => x.document.url === hit.document.url) === i);
   if (unique.length) {
@@ -562,7 +563,7 @@ fetch('./data/sources.json', { cache: 'no-cache' }).then(response => {
 }).then(documents => {
   state.index = createIndex(documents);
   if (!state.index.docs.length) throw new Error('No source passages loaded');
-  $('#source-count').textContent = `${state.index.docs.length} public sources`;
+  $('#source-count').textContent = `${state.index.docs.length} source notes`;
   setSourceStatus('ready');
   setMascot('waving', 1200);
 }).catch(() => {

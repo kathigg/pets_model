@@ -10,7 +10,7 @@ A chatbot for exploring privacy-enhancing technologies (PETs) in education data 
 
 ## How the chatbot works
 
-The app uses 47 reviewed, original summaries of public sources. For each eligible question, it retrieves relevant passages and asks Gemini on the server to draft a short answer. The server checks citations against the passages it supplied. Inspectable rules add PET combinations, caveats, alternatives, and missing facts for use cases. If Gemini is unavailable or fails validation, the browser shows a local rule or retrieval answer.
+The app uses 47 draft, original summaries linked to public sources. They have not yet received a recorded source-by-source expert review. For each eligible question, the app retrieves relevant passages and asks Gemini on the server to draft a short answer. The server checks citations against the passages it supplied. Inspectable rules add PET combinations, caveats, alternatives, and missing facts for use cases. If Gemini is unavailable or fails validation, the browser shows a local rule or retrieval answer.
 
 Legal-permission questions and selected risky releases go to human review. A PET choice does not establish authority to use or disclose data. See [the architecture](docs/ARCHITECTURE.md) for the request flow and limits.
 
@@ -47,7 +47,7 @@ The app does not intentionally persist chats or use analytics. The transcript an
 | `public/app.mjs`, `public/styles.css`, `public/assets/` | Chat interface and mascot |
 | `cloud-run/`, `Dockerfile` | Google Cloud Run public host and service identity |
 | `server/`, `public/engine.mjs`, `public/retrieval.mjs` | Review gates, retrieval, PET rules, and Gemini transport |
-| `public/data/sources.json` | Reviewed public-source passages and provenance |
+| `public/data/sources.json` | Draft public-source summaries and provenance |
 | `data/eval_queries.json`, `scripts/`, `tests/` | Corpus checks and regression evaluation |
 | `app/`, `vite.config.ts`, `build/sites-worker.ts` | Existing Sites preview |
 

@@ -12,7 +12,9 @@
       "slds"
     ],
     "text": "Privacy-enhancing technologies help education agencies and researchers use, analyze, and share data while reducing risks to individuals. MDI's public PET hub brings together training, project examples, and practical tools for education data systems.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "institutional_context"
   },
@@ -31,7 +33,9 @@
       "use_case"
     ],
     "text": "MDI and D.C. ETEP used mock datasets and open-source tools to test secure multiparty computation for education-to-workforce linkage across jurisdictions. This is a pilot example of limiting exposure of sensitive inputs during cross-agency analysis, not proof that every linkage setting has the same requirements.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "case_study"
   },
@@ -50,7 +54,9 @@
       "use_case"
     ],
     "text": "MDI and Arkansas ARData piloted an open-source privacy-preserving record linkage approach for education-to-workforce records. Their public overview describes a simulated linkage test; it should not be read as a general finding that any tokenization scheme makes identifiers anonymous.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "case_study"
   },
@@ -68,7 +74,9 @@
       "use_case"
     ],
     "text": "MDI and Nebraska NSWERS tested open-source synthetic-data tools on education and workforce indicators. The public description presents synthetic samples as a way to reduce the need for real personally identifiable information in early analysis and external collaboration; release safety still depends on the generation method and disclosure review.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "case_study"
   },
@@ -86,7 +94,9 @@
       "tool_evaluation"
     ],
     "text": "The Arkansas pilot tested Linkja with synthetic statewide longitudinal data and compared its match rates with an existing linkage process. MDI says Linkja offers multiple linkage rules, making data schema and matching requirements important questions before choosing a record-linkage tool.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "case_study"
   },
@@ -105,7 +115,9 @@
       "use_case"
     ],
     "text": "In the DC ETEP pilot, PSI was used with mock D.C. education, public-benefit, and Maryland wage data to test cross-jurisdiction matching. MDI describes encrypted exact-match joins and schema alignment, so the example is most relevant when parties can define compatible matching fields and an exact-match workflow.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "institutional_context"
   },
@@ -123,7 +135,9 @@
       "evaluation"
     ],
     "text": "MDI's public guide frames a synthetic-data pilot as both an organizational and technical project: establish partners and goals, define datasets and deliverables, address IT and legal requirements, use checklists, and plan how findings will be communicated. Those steps belong in a recommendation alongside tool choice.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -141,7 +155,9 @@
       "risk_assessment"
     ],
     "text": "MDI's public training pathway separates input privacy, such as secure linkage with MPC or hashing, from output privacy, such as differential privacy and synthetic data. Its advanced training also covers disclosure-risk assessments, threat models, and legal frameworks.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "institutional_context"
   },
@@ -159,7 +175,9 @@
       "procurement"
     ],
     "text": "MDI describes SLDS PET selection as specific to each privacy concern and data use. The organization reports that implementation also calls for legal-counsel discussions, compatible data schemas, and IT or procurement planning. A tool recommendation should surface these operational questions rather than assume technology alone completes adoption.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "institutional_context"
   },
@@ -175,7 +193,9 @@
       "definition"
     ],
     "text": "Differential privacy is a provable property of an analysis, not a label for any data masking step. Informally, the published result should be similar whether a particular person's data is present or absent. A proposed implementation needs a defined mechanism and privacy parameters before it can claim this protection.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -192,7 +212,9 @@
       "utility"
     ],
     "text": "NIST explains that epsilon controls the strength of a differential-privacy guarantee: a lower epsilon makes results less distinguishable between datasets with and without one person's data. Selecting it affects the balance between privacy and statistical usefulness; there is no universal value for every use case.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -209,7 +231,9 @@
       "aggregate_release"
     ],
     "text": "A differentially private query can add random noise to the result, but the amount must account for how much one person's record could change the answer. Queries with greater sensitivity may require more noise and can produce less useful estimates. Choosing a package does not remove the need to understand this calculation.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -226,7 +250,9 @@
       "governance"
     ],
     "text": "NIST describes differential privacy as compositional: the privacy losses of separate analyses on the same data can be accounted for together. A system that will answer repeated queries or issue recurring releases needs a budget and release plan, not just noise added to each individual answer.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -243,7 +269,9 @@
       "risk"
     ],
     "text": "NIST distinguishes differentially private synthetic data from synthetic data made without a formal privacy guarantee. Many synthesis methods do not satisfy differential privacy. Before treating generated records as safe to share, examine the method's privacy claim and evaluate disclosure risk.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -260,7 +288,9 @@
       "utility"
     ],
     "text": "Differentially private synthetic data can let analysts use familiar tools on artificial records, but reproducing useful correlations is difficult. NIST notes that a purpose-built private analysis often gives more accurate answers than running the same analysis on a synthetic dataset. Evaluate utility against the intended questions and subgroups.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -279,7 +309,9 @@
       "output_privacy"
     ],
     "text": "NIST explains that privacy-enhancing cryptography can keep source data confidential across parties while differential privacy limits what a released statistic reveals. These techniques address different risks and can be combined when an analysis needs both confidential computation and safer outputs.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -297,7 +329,9 @@
       "aggregate_analysis"
     ],
     "text": "NIST gives an example in which secure multiparty computation derives a statistic from two organizations' databases without first combining their raw databases. Parties can protect each other's inputs while still deciding what result may be revealed. Output disclosure controls may be needed separately.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -315,7 +349,9 @@
       "output_privacy"
     ],
     "text": "Private set intersection can identify records shared by two datasets without revealing the nonmatching records. A cardinality variant returns the number of matches instead of the matching set. NIST cautions that even a match count can be sensitive, so specify which party learns which output and assess whether additional protection is needed.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -332,7 +368,9 @@
       "outsourced_computation"
     ],
     "text": "Fully homomorphic encryption permits a party without the secret key to transform encrypted data into an encrypted result representing a requested computation. It protects the data during delegated computation, but the eventual decrypted output still needs its own disclosure assessment.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -350,7 +388,9 @@
       "query_interface"
     ],
     "text": "NIST SP 800-188 advises agencies to clarify the purpose and risk of a release before selecting a sharing model. Options include publishing de-identified or synthetic data, offering a controlled query interface, or sharing within a protected enclave. The choice changes both utility and exposure risk.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -368,7 +408,9 @@
       "evaluation"
     ],
     "text": "NIST recommends governance around de-identification, including a possible disclosure review board, measurable standards, and re-identification studies. Merely masking fields is not necessarily enough to de-identify a dataset. Agencies should test the chosen approach against the specific release context.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -386,7 +428,9 @@
       "linkage"
     ],
     "text": "NIST SP 800-188 treats keyed hashing of direct identifiers as pseudonymization, not a guarantee that a released dataset is anonymous. If a hashing key is absent or compromised, an attacker may recover original values by search. Repeatable linkage keys and related secrets require careful protection and a separate release-risk assessment.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -403,7 +447,9 @@
       "multiple_pets"
     ],
     "text": "The ICO distinguishes protection of information while it is processed from protection against inference from the result. SMPC and TEEs can help protect inputs; differential privacy addresses outputs. When both stages matter, a design may need complementary techniques rather than one PET standing alone.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -420,7 +466,9 @@
       "risk"
     ],
     "text": "The ICO cautions that many PET deployments continue to process personal information and that not every PET produces effectively anonymous data. Organizations still need to assess purpose, risks, accuracy, accountability, security, and applicable legal duties. This UK guidance is under review, so current legal interpretation needs checking.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "legal_guidance"
   },
@@ -438,7 +486,9 @@
       "implementation"
     ],
     "text": "The ICO advises a case-specific assessment of the processing purpose, affected people, threat or disclosure risks, technical maturity, implementation cost, and staff expertise. Weak key management or inadequate organizational controls can undermine an otherwise suitable PET. Recommendations should make those dependencies explicit.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "legal_guidance"
   },
@@ -456,7 +506,9 @@
       "evaluation"
     ],
     "text": "Synthetic data can reproduce patterns in source data for testing or analysis, but a close fit may increase disclosure risk and inherited bias can carry into generated records. The ICO recommends checking whether people can be inferred, whether the data represent relevant groups, and whether the output answers the intended questions.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -473,7 +525,9 @@
       "enclave"
     ],
     "text": "A trusted execution environment is an isolated hardware-and-software area of a processor for running code on sensitive information. Its design aims to restrict what the main operating system and other applications can inspect or change. A TEE protects processing but does not by itself decide whether an output is safe to release.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -491,7 +545,9 @@
       "secret_sharing"
     ],
     "text": "Secure multiparty computation lets two or more parties jointly process data without each party sharing all of its information with the others. Secret sharing is one common implementation technique, though it is not the only one. Protocol details determine which parties learn the final result and what cooperation or infrastructure is needed.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -509,7 +565,9 @@
       "data_minimization"
     ],
     "text": "PSI is a form of secure multiparty computation used to find elements shared by two datasets without exposing the full datasets. Depending on the protocol, parties may learn matching elements, only the match count, or aggregate measures. Decide the permitted output and recipient before recommending a PSI design.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -526,7 +584,9 @@
       "model_privacy"
     ],
     "text": "Federated learning trains local models at separate data holders and combines learned updates into a shared model without pooling their training records. The ICO notes that this alone may not protect personal information in updates or outputs; additional PETs can be needed at different stages.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -544,7 +604,9 @@
       "output_privacy"
     ],
     "text": "Homomorphic encryption allows supported calculations on encrypted inputs without first decrypting them. Scheme choice depends on the operations, scale, and performance required; fully homomorphic methods can be computationally costly. Encryption protects computation inputs, while decrypted results still require disclosure controls.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -561,7 +623,9 @@
       "data_minimization"
     ],
     "text": "A zero-knowledge proof can let a party establish that a statement about a secret is true without revealing the underlying secret; an age-threshold claim is one example. It is relevant when the task is to verify a property, rather than to share a whole record or run broad statistical analysis.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -578,7 +642,9 @@
       "uk"
     ],
     "text": "The ICO states that its PET guidance is under review following UK legislative changes. Its technical explanations remain useful background, but a decision about current UK legal obligations should check the latest official guidance and involve appropriate legal review.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "legal_guidance"
   },
@@ -596,7 +662,9 @@
       "disclosure_avoidance"
     ],
     "text": "The Department of Education distinguishes aggregate tables from student-level microdata when discussing disclosure avoidance. The appropriate method depends on what will be released, the protection it offers, and how useful the resulting data remain. Ask about output format and audience before recommending a release control.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -614,7 +682,9 @@
       "reidentification"
     ],
     "text": "FERPA regulations allow certain releases of de-identified education-record information after an agency or institution makes a reasonable determination that students are not identifiable. That assessment must consider single or multiple releases and other reasonably available information, so removing direct identifiers alone is not the full test.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "legal_guidance"
   },
@@ -632,7 +702,9 @@
       "legal"
     ],
     "text": "FERPA regulations describe limited conditions for attaching a code to de-identified student-level research data so a recipient can match records from the same source. The code cannot derive from a student's Social Security number or other personal information, cannot be used to identify the student, and its generation details must be protected. This is not blanket approval for every hashed identifier.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "legal_guidance"
   },
@@ -650,7 +722,9 @@
       "disclosure_avoidance"
     ],
     "text": "The Department warns that aggregate school reports can still reveal a student's information when a group is small or a characteristic is unique. A small count does not automatically equal a disclosure, but it raises identification risk. Agencies should evaluate the surrounding tables and other available information, not use one universal cell-size rule.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -668,7 +742,9 @@
       "differencing"
     ],
     "text": "Suppressing one sensitive table cell may fail when row or column totals allow subtraction to recover it. The Department explains that complementary suppression and a review of related releases may be needed. Blurring and perturbation are other options, each with utility and transparency tradeoffs.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "US",
     "source_role": "technical_guidance"
   },
@@ -685,7 +761,9 @@
       "governance"
     ],
     "text": "The UK government's PET adoption guide uses a question-based flow to help decision-makers identify techniques worth exploring. Its suggestions are intentionally not definitive: suitability depends on the use case, privacy design, and governance arrangements. A recommendation system should ask for missing context and explain uncertainty.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -702,7 +780,9 @@
       "implementation"
     ],
     "text": "The UK government cautions that adding one PET does not by itself ensure better privacy. The overall system design and governance arrangements determine whether a technique mitigates the relevant risks. A sound architecture should address who holds data, who can access results, and what operational controls remain necessary.",
-    "reviewed_at": "2026-10-11",
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null,
     "jurisdiction": "UK",
     "source_role": "technical_guidance"
   },
@@ -727,7 +807,9 @@
     "page": 7,
     "jurisdiction": "US",
     "source_role": "case_study",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   },
   {
     "id": "mdi-dc-report-exact-limit",
@@ -750,7 +832,9 @@
     "page": 9,
     "jurisdiction": "US",
     "source_role": "case_study",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   },
   {
     "id": "mdi-ar-report-linkja-results",
@@ -773,7 +857,9 @@
     "page": 7,
     "jurisdiction": "US",
     "source_role": "case_study",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   },
   {
     "id": "mdi-ar-report-probabilistic-gap",
@@ -796,7 +882,9 @@
     "page": 9,
     "jurisdiction": "US",
     "source_role": "case_study",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   },
   {
     "id": "mdi-nswers-report-utility",
@@ -819,7 +907,9 @@
     "page": 6,
     "jurisdiction": "US",
     "source_role": "case_study",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   },
   {
     "id": "mdi-nswers-report-longitudinal",
@@ -842,7 +932,9 @@
     "page": 8,
     "jurisdiction": "US",
     "source_role": "case_study",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   },
   {
     "id": "nih-pprl-fuzzy",
@@ -863,6 +955,8 @@
     "section": "Introduction — Anonymous linkage codes and Bloom filters",
     "jurisdiction": "international",
     "source_role": "research_evidence",
-    "reviewed_at": "2026-10-11"
+    "drafted_at": "2026-10-11",
+    "review_status": "draft",
+    "reviewed_at": null
   }
 ]

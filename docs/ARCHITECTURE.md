@@ -32,7 +32,7 @@ The existing Sites preview uses Vinext and a Cloudflare Worker. Its `/api/chat` 
 
 ## Privacy and content boundary
 
-The corpus contains short original summaries of reviewed, public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).
+The corpus contains short draft summaries linked to public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Their metadata has been checked, but each summary still needs a recorded expert check against its cited source. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).
 
 Visitor text is rendered as text rather than HTML. The app does not intentionally store a server-side transcript or use analytics, and **Download** creates a local file. Gemini-enabled requests pass through the host and Google; this code alone cannot guarantee their logging or retention practices. Visitors should provide hypothetical details and avoid protected or confidential information.
 
@@ -40,6 +40,6 @@ The engine does not infer permission under FERPA or other laws from a PET choice
 
 ## Evaluation and next steps
 
-`npm run check` validates source metadata and rule citations, tests decision and endpoint behavior, and checks retrieval on ten synthetic questions. The corpus is manually curated and incomplete. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
+`npm run check` validates source metadata and rule citation IDs, tests decision and endpoint behavior, and checks retrieval on ten synthetic questions. The corpus is incomplete and has not had source-by-source expert review. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
 
 Before agency-facing use, prepare authorized and de-identified case records; have PET specialists label primary and complementary methods, counterindications, and missing facts; freeze an expert test set; and measure recommendation quality, unsupported claims, abstention, privacy risk, and utility. Establish source review owners, update cadence, version history, and release approval. The current Gemini integration drafts wording from public evidence; it is not trained on private materials and does not replace this expert evaluation.

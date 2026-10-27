@@ -19,12 +19,15 @@ for (const [i, doc] of docs.entries()) {
   if (!doc.title || !doc.publisher || !doc.text || !Array.isArray(doc.tags) || !doc.tags.length) fail('has incomplete metadata');
   if (!jurisdictions.has(doc.jurisdiction)) fail('has missing or invalid jurisdiction');
   if (!sourceRoles.has(doc.source_role)) fail('has missing or invalid source role');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(doc.reviewed_at || '')) fail('has no review date');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(doc.drafted_at || '')) fail('has no draft date');
+  if (doc.review_status !== 'draft' && doc.review_status !== 'reviewed') fail('has invalid review status');
+  if (doc.review_status === 'draft' && doc.reviewed_at !== null) fail('draft claims a review date');
+  if (doc.review_status === 'reviewed' && (!/^\d{4}-\d{2}-\d{2}$/.test(doc.reviewed_at || '') || !doc.reviewer)) fail('reviewed source lacks reviewer and date');
   if (doc.year !== null && (!Number.isInteger(doc.year) || doc.year < 2000 || doc.year > 2100)) fail('has invalid year');
   if (doc.text?.length > 850) fail('chunk is too long');
   try {
     const url = new URL(doc.url);
-    if (url.protocol !== 'https:' || !hosts.has(url.hostname)) fail('uses a non-reviewed source host');
+    if (url.protocol !== 'https:' || !hosts.has(url.hostname)) fail('uses a source host outside the allowlist');
     if (url.hostname === 'georgetown.app.box.com') {
       if (!publicReportShares.has(url.pathname)) fail('uses a Box link not confirmed by the MDI public corpus inventory');
       if (!Number.isInteger(doc.page) || doc.page < 1 || url.hash !== `#page=${doc.page}`) fail('has no matching report page URL');
@@ -41,6 +44,6 @@ for (const [code, pet] of Object.entries(PETS)) {
     if (!ids.has(sourceId)) { console.error(`PET ${code} references missing source ${sourceId}`); errors++; }
   }
 }
-if (docs.length < 30) { console.error('Corpus is too small for the reviewed launch set'); errors++; }
+if (docs.length < 30) { console.error('Corpus is too small for the draft launch set'); errors++; }
 if (errors) process.exit(1);
-console.log(`Validated ${docs.length} public-source chunks.`);
+console.log(`Validated metadata for ${docs.length} public-source summaries.`);
