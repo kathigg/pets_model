@@ -36,9 +36,17 @@ test('retrieval finds private set intersection evidence for cross-holder linkage
   assert.ok(hits.some(x => x.document.tags.includes('psi')));
 });
 
-test('MDI project questions surface its pilots while FERPA questions favor legal guidance', () => {
-  const project = retrieve(index, 'What privacy-enhancing technologies has MDI tested with education agencies?', { limit: 4 });
-  assert.equal(project.length, 4);
+test('MDI sources receive a small relevance boost while FERPA favors legal guidance', () => {
+  const sameText = 'education workforce linkage pilot';
+  const comparison = createIndex([
+    { id: 'other', title: sameText, text: sameText, tags: [], url: 'https://www.nist.gov/example', source_role: 'case_study' },
+    { id: 'mdi', title: sameText, text: sameText, tags: [], url: 'https://mdi.georgetown.edu/pets/example/', source_role: 'case_study' }
+  ]);
+  const boosted = retrieve(comparison, sameText, { limit: 2 });
+  assert.equal(boosted[0].document.id, 'mdi');
+  assert.ok(boosted[0].score / boosted[1].score < 1.1);
+
+  const project = retrieve(index, 'What privacy-enhancing technologies has MDI tested with education agencies?', { limit: 3 });
   assert.ok(project.every(hit => hit.document.id.startsWith('mdi-')));
 
   const legal = retrieve(index, 'Can FERPA allow sharing identifiable student records?', { limit: 2 });
@@ -52,7 +60,7 @@ test('unrelated query has no fabricated evidence', () => {
 });
 
 test('fuzzy linkage evidence supports approximate matching rather than exact PSI', () => {
-  const hits = evidenceFor(index, 'fuzzy student record linkage', ['pprl'], 3);
+  const hits = evidenceFor(index, 'How does MDI Arkansas inform fuzzy student record linkage?', ['pprl'], 3);
   assert.equal(hits[0]?.document.id, 'nih-pprl-fuzzy');
   assert.ok(hits.some(x => x.document.id === 'mdi-ar-report-probabilistic-gap'));
   assert.ok(hits.every(x => !x.document.id.includes('psi')));

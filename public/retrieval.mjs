@@ -54,7 +54,7 @@ function projectSourceWeight(doc) {
   if (!isMdiPets) return 1;
   // Prefer the project's own relevant evidence without treating its source
   // as inherently more accurate than specialist guidance.
-  return doc.source_role === 'institutional_context' ? 1.08 : 1.15;
+  return doc.source_role === 'institutional_context' ? 1.04 : 1.08;
 }
 
 export function createIndex(documents) {
@@ -121,10 +121,10 @@ export function evidenceFor(index, query, petCodes = [], limit = 5) {
       seen.add(source.id);
     }
   }
-  // Keep one source for each proposed PET first, then add at most one MDI
-  // education pilot when space remains. A case study complements the
-  // technical evidence rather than replacing it.
-  if (selected.length < max) {
+  // Keep one source for each proposed PET first. Add an MDI pilot only when
+  // the question explicitly asks about that project or one of its pilots.
+  const asksAboutMdi = /\b(?:mdi|georgetown|etep|ardata|nswers|linkja|arkansas|nebraska)\b/i.test(query);
+  if (selected.length < max && asksAboutMdi) {
     const approximate = /\b(?:fuzzy|probabilistic|approximate|imperfect|misspell\w*)\b/i.test(query);
     const relevance = new Map(retrieve(index, query, { limit: 20 }).map(hit => [hit.document.id, hit.score]));
     const examples = petCodes.flatMap(code => (PETS[code]?.sourceIds || [])

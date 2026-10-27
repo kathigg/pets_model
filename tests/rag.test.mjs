@@ -171,14 +171,13 @@ test('fuzzy linkage presents approximate-match evidence, not exact PSI evidence'
   assert.equal(response.status, 'ok');
   const evidence = model.calls[0].body.contents[0].parts[0].text;
   assert.match(evidence, /nih-pprl-fuzzy/);
-  assert.match(evidence, /mdi-ar-report-probabilistic-gap/);
   assert.doesNotMatch(evidence, /ico-psi-definition/);
 });
 
 test('exact cross-holder linkage includes the PSI alternative and evidence', async () => {
   const model = recordingModel(ids => [{ text: 'PSI can compare exact overlap.', source_ids: [ids.find(id => id === 'ico-psi-definition')] }]);
   const response = await answerWithRag({
-    message: 'Two agencies need exact linkage and raw data cannot move.', intent: 'choose',
+    message: 'How did MDI DC ETEP test exact linkage when raw data could not move?', intent: 'choose',
     profile: { goal: 'link', holders: 'two', rawMove: 'no', match: 'exact', output: 'aggregate', sensitivity: 'internal', capacity: 'high' }
   }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
   assert.equal(response.status, 'ok');

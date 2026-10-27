@@ -10,7 +10,7 @@ A chatbot for exploring privacy-enhancing technologies (PETs) in education data 
 
 ## How the chatbot works
 
-The app uses 47 draft, original summaries linked to public sources. They have not yet received a recorded source-by-source expert review. For each eligible question, the app retrieves relevant passages and asks Gemini on the server to draft a short answer. Relevant [MDI PET resources](https://mdi.georgetown.edu/pets/) and pilot reports get modest priority in retrieval, while specialist legal and technical sources still support their respective claims. The server checks citations against the passages it supplied. Inspectable rules add PET combinations, caveats, alternatives, and missing facts for use cases. If Gemini is unavailable or fails validation, the browser shows a local rule or retrieval answer.
+The app uses 47 draft, original summaries linked to public sources. They have not yet received a recorded source-by-source expert review. For each eligible question, the app retrieves relevant passages and asks Gemini on the server to draft a short answer. Relevant [MDI PET resources](https://mdi.georgetown.edu/pets/) and pilot reports get a small priority boost in retrieval, while specialist legal and technical sources still support their respective claims. The server checks citations against the passages it supplied. Inspectable rules add PET combinations, caveats, alternatives, and missing facts for use cases. If Gemini is unavailable or fails validation, the browser shows a local rule or retrieval answer.
 
 Legal-permission questions and selected risky releases go to human review. A PET choice does not establish authority to use or disclose data. See [the architecture](docs/ARCHITECTURE.md) for the request flow and limits.
 
