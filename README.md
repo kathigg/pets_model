@@ -6,7 +6,7 @@
 
 A chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains options, asks for the facts needed to assess a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
 
-**Hosting status:** The current [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) has separate access settings and uses the public-source browser fallback. The Google Cloud Run version is prepared in this repository but **has not been deployed**. The intended public link will come from Cloud Run after a Google Cloud project is connected.
+**Hosting status (October 27, 2026):** A [private Cloud Run service](https://pets-model-850678646784.us-east1.run.app) is deployed in `mdi-yimingwu-pets`; it currently requires Google Cloud access. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) has separate access settings and uses the public-source browser fallback. The Cloud Run runtime account still needs Vertex permission before live Gemini answers can work, and public access has not been enabled.
 
 ## How the chatbot works
 
@@ -18,9 +18,9 @@ Legal-permission questions and selected risky releases go to human review. A PET
 
 The selected public host is [Google Cloud Run](https://docs.cloud.google.com/run/docs/overview). It serves the site and `/api/chat` together. Cloud Run uses a dedicated [service identity](https://docs.cloud.google.com/run/docs/securing/service-identity) to call the project-scoped Gemini API in Vertex AI. **No Gemini API key needs to be copied into ChatGPT, Codex, GitHub, or Cloud Run.**
 
-Deployment still needs an approved Google Cloud project with an [active billing account](https://docs.cloud.google.com/docs/get-started/learn-about-billing), the Vertex AI API enabled, and a dedicated service account permitted to call Gemini. Vertex model access alone does not authorize deploying a public Cloud Run service. Connecting [this GitHub repository](https://github.com/kathigg/pets_model) to Cloud Run can automatically redeploy pushes to `main` after a project administrator sets it up. The exact steps and required approval are in [Deploy to Google Cloud Run](docs/DEPLOY_GOOGLE_CLOUD_RUN.md).
+The approved project has billing and the required APIs enabled. A dedicated runtime account exists but has not been granted `aiplatform.endpoints.predict`; a project Owner must grant it. The service is private because this deployer does not have `run.services.setIamPolicy`. Connecting [this GitHub repository](https://github.com/kathigg/pets_model) to Cloud Build for deployment from `main` is also pending. The current state and remaining steps are in [Deploy to Google Cloud Run](docs/DEPLOY_GOOGLE_CLOUD_RUN.md).
 
-Cloud Run has a [free allowance](https://cloud.google.com/run/pricing), but a billing account is still required and hosting can incur charges beyond that allowance. [Vertex AI model use](https://cloud.google.com/vertex-ai/generative-ai/pricing) is billed separately. A public link can receive traffic beyond the intended team. The app limits model calls to 100 per UTC day **per process**; a restart or overlapping revision resets or duplicates that count. These controls are not a guaranteed dollar cap. An approved separate project would allow [service-level spend caps](https://docs.cloud.google.com/billing/docs/how-to/budgets-spend-caps) without interrupting other workloads.
+Cloud Run has a [free allowance](https://cloud.google.com/run/pricing), but hosting can incur charges. [Vertex AI model use](https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing) is billed separately. The private service has zero minimum instances and a one-instance service cap. The app limits model calls to 20 per UTC day **per process**; restarts can reset that count. These controls are not a guaranteed dollar cap. Agree on a project budget and alerts before opening the service to anyone with the link.
 
 ## Run locally
 

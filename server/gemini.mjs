@@ -1,5 +1,5 @@
 /** Server-only Vertex AI transport. No API key or provider response is sent to the browser. */
-export const DEFAULT_MODEL = 'gemini-3-flash-preview';
+export const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 
 function responseSchema(sourceIds) {
   return {

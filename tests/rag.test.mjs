@@ -30,7 +30,7 @@ test('grounded informational answer exposes only cited public-source metadata', 
   assert.equal(model.calls.length, 1);
   assert.equal(model.calls[0].options.headers['x-goog-api-key'], 'test-key');
   assert.equal(model.calls[0].body.store, undefined);
-  assert.match(model.calls[0].url, /gemini-3-flash-preview:generateContent$/);
+  assert.match(model.calls[0].url, /gemini-3\.5-flash-lite:generateContent$/);
 });
 
 test('invented citations cause fail-closed response', async () => {
