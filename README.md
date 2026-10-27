@@ -51,7 +51,7 @@ The app does not intentionally persist chats or use analytics. The transcript an
 | `data/eval_queries.json`, `scripts/`, `tests/` | Corpus checks and regression evaluation |
 | `app/`, `vite.config.ts`, `build/sites-worker.ts` | Existing Sites preview |
 
-The repository also retains an unused Cloudflare deployment path. Google Cloud Run with IAP is the selected private host.
+The repository also retains an unused Cloudflare deployment path. Google Cloud Run with IAP is the selected private host. GitHub checks run on each push and pull request without Gemini credentials or model calls; they do not deploy the site.
 
 ## Check the project
 
