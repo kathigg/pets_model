@@ -43,6 +43,20 @@ function frequencies(xs) {
   return m;
 }
 
+function projectSourceWeight(doc) {
+  const isMdiPets = [doc.url, doc.public_landing_url].some(value => {
+    if (!value) return false;
+    try {
+      const url = new URL(value);
+      return url.hostname === 'mdi.georgetown.edu' && url.pathname.startsWith('/pets/');
+    } catch { return false; }
+  });
+  if (!isMdiPets) return 1;
+  // Prefer the project's own relevant evidence without treating its source
+  // as inherently more accurate than specialist guidance.
+  return doc.source_role === 'institutional_context' ? 1.08 : 1.15;
+}
+
 export function createIndex(documents) {
   if (!Array.isArray(documents)) throw new TypeError('documents must be an array');
   const docs = documents.filter(d => d && typeof d.id === 'string' && typeof d.text === 'string' && /^https:\/\//.test(d.url || ''));
@@ -50,7 +64,7 @@ export function createIndex(documents) {
     const body = tokens(d.text);
     const title = tokens(d.title || '');
     const tags = tokens((d.tags || []).join(' '));
-    return { body: frequencies(body), title: frequencies(title), tags: frequencies(tags), length: Math.max(1, body.length) };
+    return { body: frequencies(body), title: frequencies(title), tags: frequencies(tags), length: Math.max(1, body.length), projectWeight: projectSourceWeight(d) };
   });
   const df = new Map();
   for (const vector of vectors) {
@@ -86,6 +100,7 @@ export function retrieve(index, query, { limit = 5, tags = [] } = {}) {
       if (boost.has(term)) score += idf * 0.35;
     }
     if (ferpaQuestion && doc.jurisdiction === 'US' && doc.source_role === 'legal_guidance') score *= 1.7;
+    if (!ferpaQuestion) score *= v.projectWeight;
     return { document: doc, score, matched };
   }).filter(x => x.score > 0 && x.matched.some(term => !broad.has(term)));
   scored.sort((a, b) => b.score - a.score || a.document.id.localeCompare(b.document.id));

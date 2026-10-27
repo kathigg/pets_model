@@ -36,6 +36,16 @@ test('retrieval finds private set intersection evidence for cross-holder linkage
   assert.ok(hits.some(x => x.document.tags.includes('psi')));
 });
 
+test('MDI project questions surface its pilots while FERPA questions favor legal guidance', () => {
+  const project = retrieve(index, 'What privacy-enhancing technologies has MDI tested with education agencies?', { limit: 4 });
+  assert.equal(project.length, 4);
+  assert.ok(project.every(hit => hit.document.id.startsWith('mdi-')));
+
+  const legal = retrieve(index, 'Can FERPA allow sharing identifiable student records?', { limit: 2 });
+  assert.equal(legal.length, 2);
+  assert.ok(legal.every(hit => hit.document.source_role === 'legal_guidance'));
+});
+
 test('unrelated query has no fabricated evidence', () => {
   assert.deepEqual(retrieve(index, 'volcanoes astrophysics xylophone', { limit: 5 }), []);
   assert.deepEqual(retrieve(index, 'What are the cafeteria menus in schools?', { limit: 5 }), []);
