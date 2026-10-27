@@ -171,6 +171,7 @@ test('fuzzy linkage presents approximate-match evidence, not exact PSI evidence'
   assert.equal(response.status, 'ok');
   const evidence = model.calls[0].body.contents[0].parts[0].text;
   assert.match(evidence, /nih-pprl-fuzzy/);
+  assert.match(evidence, /mdi-ar-report-probabilistic-gap/);
   assert.doesNotMatch(evidence, /ico-psi-definition/);
 });
 
@@ -184,6 +185,7 @@ test('exact cross-holder linkage includes the PSI alternative and evidence', asy
   assert.ok(response.sources.some(source => source.id === 'ico-psi-definition'));
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /Private set intersection/);
+  assert.match(prompt, /mdi-dc-report-triangulation/);
 });
 
 test('provider failure returns an unavailable response without provider details', async () => {

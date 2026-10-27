@@ -54,6 +54,7 @@ test('unrelated query has no fabricated evidence', () => {
 test('fuzzy linkage evidence supports approximate matching rather than exact PSI', () => {
   const hits = evidenceFor(index, 'fuzzy student record linkage', ['pprl'], 3);
   assert.equal(hits[0]?.document.id, 'nih-pprl-fuzzy');
+  assert.ok(hits.some(x => x.document.id === 'mdi-ar-report-probabilistic-gap'));
   assert.ok(hits.every(x => !x.document.id.includes('psi')));
 });
 

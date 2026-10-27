@@ -72,7 +72,7 @@ export const PETS = {
     short: 'Link records across holders while limiting exposure of identifying fields.',
     watch: 'Approximate matching needs specialist protocols and measured false-match and missed-match rates.',
     tags: ['record-linkage', 'hashing', 'psi'],
-    sourceIds: ['nih-pprl-fuzzy', 'mdi-arkansas-use-case']
+    sourceIds: ['nih-pprl-fuzzy', 'mdi-arkansas-use-case', 'mdi-ar-report-probabilistic-gap']
   },
   'psi': {
     name: 'Private set intersection',
@@ -80,7 +80,7 @@ export const PETS = {
     short: 'Find overlap between holders’ sets without disclosing their nonmatching members.',
     watch: 'Exact-set overlap alone does not solve fuzzy linkage or every downstream analysis.',
     tags: ['psi', 'mpc', 'record-linkage'],
-    sourceIds: ['ico-psi-definition', 'nist-crypto-psi-cardinality']
+    sourceIds: ['ico-psi-definition', 'nist-crypto-psi-cardinality', 'mdi-dc-report-triangulation']
   },
   'mpc': {
     name: 'Secure multiparty computation',
@@ -88,7 +88,7 @@ export const PETS = {
     short: 'Compute a defined joint result while each holder keeps its private inputs.',
     watch: 'Protocols, threat model, computation cost, and output leakage require specialist review.',
     tags: ['mpc', 'psi', 'private-computation'],
-    sourceIds: ['nist-crypto-smpc', 'ico-smpc-definition']
+    sourceIds: ['nist-crypto-smpc', 'ico-smpc-definition', 'mdi-dc-use-case']
   },
   'dp': {
     name: 'Differential privacy',
@@ -104,7 +104,7 @@ export const PETS = {
     short: 'Generate example records to test systems or support lower-risk exploration.',
     watch: 'Synthetic data is not automatically private; measure disclosure risk, utility, and multi-table integrity.',
     tags: ['synthetic-data', 'education'],
-    sourceIds: ['ico-synthetic-risks', 'nist-dp-synthetic-caution']
+    sourceIds: ['ico-synthetic-risks', 'nist-dp-synthetic-caution', 'mdi-nswers-report-utility']
   },
   'tre': {
     name: 'Trusted research environment',
