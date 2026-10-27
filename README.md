@@ -6,7 +6,7 @@
 
 A chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains options, asks for the facts needed to assess a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
 
-**Hosting status (October 27, 2026):** A [private Cloud Run service](https://pets-model-850678646784.us-east1.run.app) is deployed in `mdi-yimingwu-pets`; it currently requires Google Cloud access. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) has separate access settings and uses the public-source browser fallback. The Cloud Run runtime account still needs Vertex permission before live Gemini answers can work, and public access has not been enabled.
+**Hosting status (October 27, 2026):** A [private Cloud Run service](https://pets-model-850678646784.us-east1.run.app) is deployed in `mdi-yimingwu-pets`; it currently requires Google Cloud access. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) has separate access settings and uses the public-source browser fallback. The Cloud Run runtime account still needs Vertex permission before live Gemini answers can work. Browser access for selected people will use Identity-Aware Proxy (IAP).
 
 ## How the chatbot works
 
@@ -14,13 +14,13 @@ The app uses 47 draft, original summaries linked to public sources. They have no
 
 Legal-permission questions and selected risky releases go to human review. A PET choice does not establish authority to use or disclose data. See [the architecture](docs/ARCHITECTURE.md) for the request flow and limits.
 
-## Publish on Google Cloud Run
+## Share privately on Google Cloud Run
 
-The selected public host is [Google Cloud Run](https://docs.cloud.google.com/run/docs/overview). It serves the site and `/api/chat` together. Cloud Run uses a dedicated [service identity](https://docs.cloud.google.com/run/docs/securing/service-identity) to call the project-scoped Gemini API in Vertex AI. **No Gemini API key needs to be copied into ChatGPT, Codex, GitHub, or Cloud Run.**
+The selected host is [Google Cloud Run](https://docs.cloud.google.com/run/docs/overview). It serves the site and `/api/chat` together. [IAP directly on Cloud Run](https://docs.cloud.google.com/run/docs/securing/identity-aware-proxy-cloud-run) can require a Google sign-in and allow only named users or a group to open the chatbot in a browser. Cloud Run uses a dedicated [service identity](https://docs.cloud.google.com/run/docs/securing/service-identity) to call the project-scoped Gemini API in Vertex AI. **No Gemini API key needs to be copied into ChatGPT, Codex, GitHub, or Cloud Run.**
 
-The approved project has billing and the required APIs enabled. A dedicated runtime account exists but has not been granted `aiplatform.endpoints.predict`; a project Owner must grant it. The service is private because this deployer does not have `run.services.setIamPolicy`. Connecting [this GitHub repository](https://github.com/kathigg/pets_model) to Cloud Build for deployment from `main` is also pending. The current state and remaining steps are in [Deploy to Google Cloud Run](docs/DEPLOY_GOOGLE_CLOUD_RUN.md).
+The approved project has billing and the required deployment APIs enabled. A dedicated runtime account exists but has not been granted `aiplatform.endpoints.predict`; a project Owner must grant it. IAP and its named-user access policy are not configured yet. Connecting [this GitHub repository](https://github.com/kathigg/pets_model) to Cloud Build for deployment from `main` is also pending. The current state and remaining steps are in [Deploy to Google Cloud Run](docs/DEPLOY_GOOGLE_CLOUD_RUN.md).
 
-Cloud Run has a [free allowance](https://cloud.google.com/run/pricing), but hosting can incur charges. [Vertex AI model use](https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing) is billed separately. The private service has zero minimum instances and a one-instance service cap. The app limits model calls to 20 per UTC day **per process**; restarts can reset that count. These controls are not a guaranteed dollar cap. Agree on a project budget and alerts before opening the service to anyone with the link.
+Cloud Run has a [free allowance](https://cloud.google.com/run/pricing), but hosting can incur charges. [Vertex AI model use](https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing) is billed separately. The private service has zero minimum instances and a one-instance service cap. The app limits model calls to 20 per UTC day **per process**; restarts can reset that count. These controls are not a guaranteed dollar cap. Agree on a project budget and alerts before inviting users.
 
 ## Run locally
 
@@ -45,13 +45,13 @@ The app does not intentionally persist chats or use analytics. The transcript an
 | Path | Purpose |
 | --- | --- |
 | `public/app.mjs`, `public/styles.css`, `public/assets/` | Chat interface and mascot |
-| `cloud-run/`, `Dockerfile` | Google Cloud Run public host and service identity |
+| `cloud-run/`, `Dockerfile` | Google Cloud Run host and service identity |
 | `server/`, `public/engine.mjs`, `public/retrieval.mjs` | Review gates, retrieval, PET rules, and Gemini transport |
 | `public/data/sources.json` | Draft public-source summaries and provenance |
 | `data/eval_queries.json`, `scripts/`, `tests/` | Corpus checks and regression evaluation |
 | `app/`, `vite.config.ts`, `build/sites-worker.ts` | Existing Sites preview |
 
-The repository also retains an unused Cloudflare deployment path. Google Cloud Run is the selected public host.
+The repository also retains an unused Cloudflare deployment path. Google Cloud Run with IAP is the selected private host.
 
 ## Check the project
 
