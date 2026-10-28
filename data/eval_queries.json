@@ -11,5 +11,7 @@
   {"query":"What does a cross-jurisdiction education linkage pilot look like?","expected_ids":["mdi-dc-"]},
   {"query":"Why did the DC ETEP pilot need an intermediate TANF file?","expected_ids":["mdi-dc-report-triangulation"]},
   {"query":"What match agreement did Arkansas Linkja observe on synthetic records?","expected_ids":["mdi-ar-report-linkja-results"]},
-  {"query":"What was difficult about synthetic longitudinal data for Nebraska NSWERS?","expected_ids":["mdi-nswers-report-longitudinal","mdi-nswers-report-utility"]}
+  {"query":"What was difficult about synthetic longitudinal data for Nebraska NSWERS?","expected_ids":["mdi-nswers-report-longitudinal","mdi-nswers-report-utility"]},
+  {"query":"Can multiple match-key PPRL compare misspellings approximately?","expected_ids":["nih-pprl-fuzzy"]},
+  {"query":"Why can suppressing one school table cell fail when row totals are published?","expected_ids":["ed-complementary-suppression"]}
 ]

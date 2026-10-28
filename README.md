@@ -60,7 +60,7 @@ npm run check
 npm run build
 ```
 
-`npm run check` validates corpus metadata and rule citations, runs decision, endpoint, and retrieval tests, and evaluates 13 synthetic retrieval questions. These checks do not establish expert accuracy, legal compliance, privacy protection, or source currency. Expert-labeled cases and privacy, utility, and security reviews are needed before agency use.
+`npm run check` validates corpus metadata and rule citations, runs decision, endpoint, and retrieval tests, and evaluates 15 synthetic retrieval questions. These checks do not establish expert accuracy, legal compliance, privacy protection, or source currency. Expert-labeled cases and privacy, utility, and security reviews are needed before agency use.
 
 ## License
 

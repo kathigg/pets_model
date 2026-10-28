@@ -40,6 +40,6 @@ The engine does not infer permission under FERPA or other laws from a PET choice
 
 ## Evaluation and next steps
 
-`npm run check` validates source metadata and rule citation IDs, tests decision and endpoint behavior, and checks retrieval on 13 synthetic questions. The corpus is incomplete and has not had source-by-source expert review. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
+`npm run check` validates source metadata and rule citation IDs, tests decision and endpoint behavior, and checks retrieval on 15 synthetic questions. The corpus is incomplete and has not had source-by-source expert review. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
 
 Before agency-facing use, prepare authorized and de-identified case records; have PET specialists label primary and complementary methods, counterindications, and missing facts; freeze an expert test set; and measure recommendation quality, unsupported claims, abstention, privacy risk, and utility. Establish source review owners, update cadence, version history, and release approval. The current Gemini integration drafts wording from public evidence; it is not trained on private materials and does not replace this expert evaluation.

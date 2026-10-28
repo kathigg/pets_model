@@ -419,7 +419,7 @@
   {
     "id": "nist-crypto-hashing-identifier-risk",
     "title": "Hashed identifiers can still expose identities",
-    "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-188.pdf",
+    "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-188.pdf#page=65",
     "publisher": "National Institute of Standards and Technology",
     "year": 2023,
     "tags": [
@@ -430,6 +430,9 @@
       "linkage"
     ],
     "text": "NIST SP 800-188 treats keyed hashing of direct identifiers as pseudonymization, not a guarantee that a released dataset is anonymous. If a hashing key is absent or compromised, an attacker may recover original values by search. Repeatable linkage keys and related secrets require careful protection and a separate release-risk assessment.",
+    "source_document": "NIST SP 800-188: De-Identifying Government Datasets: Techniques and Governance",
+    "section": "4.3.1–4.3.2: Direct identifiers and hashing risks",
+    "page": 65,
     "drafted_at": "2026-10-11",
     "review_status": "draft",
     "reviewed_at": null,
@@ -713,9 +716,9 @@
   {
     "id": "ed-small-cell-risk",
     "title": "Small aggregate cells can identify students",
-    "url": "https://studentprivacy.ed.gov/sites/default/files/resource_document/file/FAQs_disclosure_avoidance_0.pdf",
+    "url": "https://studentprivacy.ed.gov/sites/default/files/resource_document/file/FAQs_disclosure_avoidance_0.pdf#page=3",
     "publisher": "U.S. Department of Education Privacy Technical Assistance Center",
-    "year": 2012,
+    "year": 2013,
     "tags": [
       "ferpa",
       "education",
@@ -724,6 +727,9 @@
       "disclosure_avoidance"
     ],
     "text": "The Department warns that aggregate school reports can still reveal a student's information when a group is small or a characteristic is unique. A small count does not automatically equal a disclosure, but it raises identification risk. Agencies should evaluate the surrounding tables and other available information, not use one universal cell-size rule.",
+    "source_document": "Frequently Asked Questions—Disclosure Avoidance (updated May 2013)",
+    "section": "FAQs: Disclosure Avoidance of PII in Aggregate Reporting",
+    "page": 3,
     "drafted_at": "2026-10-11",
     "review_status": "draft",
     "reviewed_at": null,
@@ -733,9 +739,9 @@
   {
     "id": "ed-complementary-suppression",
     "title": "Suppressed cells can be reconstructed",
-    "url": "https://studentprivacy.ed.gov/sites/default/files/resource_document/file/FAQs_disclosure_avoidance_0.pdf",
+    "url": "https://studentprivacy.ed.gov/sites/default/files/resource_document/file/FAQs_disclosure_avoidance_0.pdf#page=3",
     "publisher": "U.S. Department of Education Privacy Technical Assistance Center",
-    "year": 2012,
+    "year": 2013,
     "tags": [
       "ferpa",
       "education",
@@ -744,6 +750,9 @@
       "differencing"
     ],
     "text": "Suppressing one sensitive table cell may fail when row or column totals allow subtraction to recover it. The Department explains that complementary suppression and a review of related releases may be needed. Blurring and perturbation are other options, each with utility and transparency tradeoffs.",
+    "source_document": "Frequently Asked Questions—Disclosure Avoidance (updated May 2013)",
+    "section": "FAQs: Disclosure Avoidance of PII in Aggregate Reporting",
+    "page": 3,
     "drafted_at": "2026-10-11",
     "review_status": "draft",
     "reviewed_at": null,
@@ -940,7 +949,7 @@
   },
   {
     "id": "nih-pprl-fuzzy",
-    "title": "Approximate PPRL must balance linkage accuracy and attack risk",
+    "title": "Encoded linkage must balance accuracy and attack risk",
     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7482515/",
     "publisher": "PubMed Central: International Journal of Population Data Science",
     "year": 2019,
@@ -952,7 +961,7 @@
       "record_linkage",
       "research_evidence"
     ],
-    "text": "Peer-reviewed research hosted by PubMed Central distinguishes exact hashed match-keys from methods that compare encoded identifiers approximately. Exact keys can lose true matches when identifiers are missing or inconsistent. Bloom-filter methods can support string similarity, but published frequency attacks show that their privacy properties require scrutiny. A fuzzy linkage proposal should measure missed matches, false matches, and attack resistance on its own data.",
+    "text": "This peer-reviewed paper explains that simple hashed match-keys cannot compare spelling variants and may miss matches when identifiers are missing or inconsistent. Bloom-filter methods can compare strings approximately but have known frequency-attack risks. The paper's own multiple-match-key method manages missing values without approximate string matching. Test any proposed method for missed matches, false matches, and attack risk in the intended setting.",
     "source_document": "Privacy preserving linkage using multiple match-keys",
     "section": "Introduction — Anonymous linkage codes and Bloom filters",
     "jurisdiction": "international",

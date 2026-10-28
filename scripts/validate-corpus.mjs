@@ -28,10 +28,11 @@ for (const [i, doc] of docs.entries()) {
   try {
     const url = new URL(doc.url);
     if (url.protocol !== 'https:' || !hosts.has(url.hostname)) fail('uses a source host outside the allowlist');
+    if (doc.page !== undefined && (!Number.isInteger(doc.page) || doc.page < 1 || url.hash !== `#page=${doc.page}`)) fail('has a page number that does not match its URL');
+    if (doc.page !== undefined && (!doc.section || !doc.source_document)) fail('has no document title or section for its page citation');
     if (url.hostname === 'georgetown.app.box.com') {
       if (!publicReportShares.has(url.pathname)) fail('uses a Box link not confirmed by the MDI public corpus inventory');
-      if (!Number.isInteger(doc.page) || doc.page < 1 || url.hash !== `#page=${doc.page}`) fail('has no matching report page URL');
-      if (!doc.section || !doc.source_document) fail('has no report section or document title');
+      if (doc.page === undefined) fail('has no report page number');
       try {
         const landing = new URL(doc.public_landing_url);
         if (landing.protocol !== 'https:' || landing.hostname !== 'mdi.georgetown.edu') fail('has no MDI public landing page');
