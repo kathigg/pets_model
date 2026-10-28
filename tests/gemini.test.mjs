@@ -4,11 +4,14 @@ import { generateGeminiDraft } from '../server/gemini.mjs';
 
 test('Vertex express request uses structured citations without exposing the key in the URL', async () => {
   let request;
+  let usage;
   const draft = await generateGeminiDraft('Public evidence prompt', ['source-one'], {
     apiKey: 'test-key',
+    onUsage: counts => { usage = counts; },
     fetchImpl: async (url, options) => {
       request = { url, options, body: JSON.parse(options.body) };
       return Response.json({
+        usageMetadata: { promptTokenCount: 123, candidatesTokenCount: 24, thoughtsTokenCount: 8, totalTokenCount: 155, unrelated: 'do not log' },
         candidates: [{ finishReason: 'STOP', content: { parts: [{
           text: JSON.stringify({ segments: [{ text: 'A short answer.', source_ids: ['source-one'] }] })
         }] } }]
@@ -16,6 +19,7 @@ test('Vertex express request uses structured citations without exposing the key 
     }
   });
   assert.deepEqual(draft.segments[0].source_ids, ['source-one']);
+  assert.deepEqual(usage, { model: 'gemini-3.5-flash-lite', promptTokenCount: 123, candidatesTokenCount: 24, thoughtsTokenCount: 8, totalTokenCount: 155 });
   assert.equal(request.options.headers['x-goog-api-key'], 'test-key');
   assert.doesNotMatch(request.url, /test-key/);
   assert.equal(request.url, 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.5-flash-lite:generateContent');

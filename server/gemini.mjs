@@ -28,7 +28,7 @@ function responseSchema(sourceIds) {
 }
 
 export async function generateGeminiDraft(prompt, sourceIds, {
-  apiKey, accessTokenProvider, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch
+  apiKey, accessTokenProvider, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch, onUsage
 } = {}) {
   if (!apiKey && (!accessTokenProvider || !projectId)) throw new Error('Missing model credential');
   if (apiKey && typeof apiKey !== 'string') throw new Error('Invalid model credential');
@@ -68,6 +68,14 @@ export async function generateGeminiDraft(prompt, sourceIds, {
     });
     if (!response.ok) throw new Error('Model request failed');
     const result = await response.json();
+    if (typeof onUsage === 'function' && result?.usageMetadata) {
+      const counts = Object.fromEntries(
+        ['promptTokenCount', 'candidatesTokenCount', 'thoughtsTokenCount', 'totalTokenCount']
+          .filter(key => Number.isSafeInteger(result.usageMetadata[key]) && result.usageMetadata[key] >= 0)
+          .map(key => [key, result.usageMetadata[key]])
+      );
+      try { onUsage({ model, ...counts }); } catch { /* Cost telemetry never changes an answer. */ }
+    }
     const candidate = result?.candidates?.[0];
     if (candidate?.finishReason && candidate.finishReason !== 'STOP') throw new Error('Model response incomplete');
     const text = candidate?.content?.parts?.filter(part => typeof part.text === 'string').map(part => part.text).join('');
