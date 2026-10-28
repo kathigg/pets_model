@@ -29,7 +29,12 @@ test('Cloud Run adapter serves the public UI without exposing server files', asy
     const script = await fetch(`${base}/app.mjs`, { method: 'HEAD' });
     assert.equal(script.status, 200);
     assert.match(script.headers.get('content-type'), /text\/javascript/);
+    assert.equal(script.headers.get('cache-control'), 'no-cache');
     assert.equal(await script.text(), '');
+
+    const sources = await fetch(`${base}/data/sources.json`, { method: 'HEAD' });
+    assert.equal(sources.status, 200);
+    assert.equal(sources.headers.get('cache-control'), 'no-cache');
 
     assert.equal((await fetch(`${base}/server/gemini.mjs`)).status, 404);
     assert.equal((await fetch(`${base}/%2e%2e%2fserver/gemini.mjs`)).status, 404);

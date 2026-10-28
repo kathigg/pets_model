@@ -130,7 +130,7 @@ async function serveStatic(request, response, pathname, publicRoot) {
     response.writeHead(200, {
       'content-type': MIME.get(extname(actual)) || 'application/octet-stream',
       'content-length': info.size,
-      'cache-control': extname(actual) === '.html' ? 'no-cache' : 'public, max-age=3600',
+      'cache-control': 'no-cache',
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer'
     });
