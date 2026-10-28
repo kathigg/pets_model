@@ -24,7 +24,7 @@ The server rejects missing, invented, or malformed citations. The browser checks
 
 ## Hosts and deployment status
 
-**Google Cloud Run with IAP is the selected private host.** The repository-root `Dockerfile` packages `public/`, `server/`, and `cloud-run/`. The Cloud Run adapter serves static files and `/api/chat` from one origin. IAP will require a Google sign-in and grant browser access only to invited users or a group. The app uses the Cloud Run metadata server to obtain an OAuth access token for a dedicated service identity, then calls the project-scoped Vertex AI Gemini endpoint. An administrator must grant that identity a custom role with `aiplatform.endpoints.predict` for Gemini calls. A Gemini API key is not needed for this route. The service is deployed privately; IAP and runtime prediction access are pending. See [the setup guide](DEPLOY_GOOGLE_CLOUD_RUN.md).
+**Google Cloud Run with IAP is the selected private host.** The repository-root `Dockerfile` packages `public/`, `server/`, and `cloud-run/`. The Cloud Run adapter serves static files and `/api/chat` from one origin. IAP requires a Google sign-in. The app uses the Cloud Run metadata server to obtain an OAuth access token for a dedicated service identity, then calls the project-scoped Vertex AI Gemini endpoint. That identity has a narrow custom role with `aiplatform.endpoints.predict`; live cited answers confirm the path works. A Gemini API key is not needed for this route. One Georgetown user has accessed the private service, while the full invite policy still needs administrator confirmation. See [the setup guide](DEPLOY_GOOGLE_CLOUD_RUN.md).
 
 The Cloud Run endpoint is intended for selected IAP-authorized users. It allows 30 valid chat requests per ten minutes across all visitors **per process**, and `cloud-run/budget.mjs` reserves at most 20 paid model calls per UTC day per process. The adapter uses one server-controlled rate key; visitor-supplied forwarding headers cannot raise the limit. Both counters reset on restart and duplicate if instances or revisions overlap. Request and model output sizes are bounded. A maximum instance setting can curb scaling but does not place a hard cap on Vertex AI charges. The browser falls back to public-source answers if the provider is unavailable.
 
@@ -32,7 +32,7 @@ The existing Sites preview uses Vinext and a Cloudflare Worker. Its `/api/chat` 
 
 ## Privacy and content boundary
 
-The corpus contains short draft summaries linked to public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Their metadata has been checked, but each summary still needs a recorded expert check against its cited source. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).
+The corpus contains short draft summaries linked to public MDI, NIST, ICO, U.S. Department of Education, GOV.UK, and peer-reviewed sources. Their metadata and a [subset of source claims](SOURCE_AUDIT.md) have been checked, but each summary still needs a recorded expert check against its cited source. Public reports linked by MDI are represented by page-specific summaries; report files, internal notes, partner contacts, and datasets are not shipped. See [the source policy](CONTENT_POLICY.md).
 
 Visitor text is rendered as text rather than HTML. The app does not intentionally store a server-side transcript or use analytics, and **Download** creates a local file. Gemini-enabled requests pass through the host and Google; this code alone cannot guarantee their logging or retention practices. Visitors should provide hypothetical details and avoid protected or confidential information.
 
@@ -40,6 +40,6 @@ The engine does not infer permission under FERPA or other laws from a PET choice
 
 ## Evaluation and next steps
 
-`npm run check` validates source metadata and rule citation IDs, tests decision and endpoint behavior, and checks retrieval on ten synthetic questions. The corpus is incomplete and has not had source-by-source expert review. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
+`npm run check` validates source metadata and rule citation IDs, tests decision and endpoint behavior, and checks retrieval on 13 synthetic questions. The corpus is incomplete and has not had source-by-source expert review. Tests cover coded scenarios and failure handling, not expert recommendation quality or end-to-end privacy.
 
 Before agency-facing use, prepare authorized and de-identified case records; have PET specialists label primary and complementary methods, counterindications, and missing facts; freeze an expert test set; and measure recommendation quality, unsupported claims, abstention, privacy risk, and utility. Establish source review owners, update cadence, version history, and release approval. The current Gemini integration drafts wording from public evidence; it is not trained on private materials and does not replace this expert evaluation.

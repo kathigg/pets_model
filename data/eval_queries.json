@@ -8,5 +8,8 @@
   {"query":"What does FERPA say about de-identified student records?","expected_ids":["ed-ferpa-deidentification"]},
   {"query":"Is hashing student identifiers the same as anonymizing them?","expected_ids":["nist-crypto-hashing"]},
   {"query":"What should a synthetic data pilot measure?","expected_ids":["mdi-synthetic-pilot","nist-dp-synthetic-utility"]},
-  {"query":"What does a cross-jurisdiction education linkage pilot look like?","expected_ids":["mdi-dc-"]}
+  {"query":"What does a cross-jurisdiction education linkage pilot look like?","expected_ids":["mdi-dc-"]},
+  {"query":"Why did the DC ETEP pilot need an intermediate TANF file?","expected_ids":["mdi-dc-report-triangulation"]},
+  {"query":"What match agreement did Arkansas Linkja observe on synthetic records?","expected_ids":["mdi-ar-report-linkja-results"]},
+  {"query":"What was difficult about synthetic longitudinal data for Nebraska NSWERS?","expected_ids":["mdi-nswers-report-longitudinal","mdi-nswers-report-utility"]}
 ]

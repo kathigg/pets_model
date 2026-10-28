@@ -853,7 +853,7 @@
       "synthetic_data",
       "case_study"
     ],
-    "text": "Arkansas tested Linkja on synthetic records, not production data. About 300 of 3,000 source records lacked required input attributes and could not be processed. Among the remaining records, the strongest tested rule used full name, birth date, and SSN; its match/nonmatch decisions agreed with the existing linkage process about 88% of the time. The pilot calls for further field testing before generalizing this result.",
+    "text": "Arkansas tested Linkja on synthetic records, not production data. About 300 of 3,000 source records lacked required input attributes and could not be processed. Among the remaining records, the strongest tested rule used full name, birth date, and SSN; its match/nonmatch decisions agreed with the existing linkage process about 88% of the time.",
     "source_document": "Testing Privacy-Preserving Record Linkage Within a Statewide Longitudinal Data System: Lessons Learned",
     "section": "Pilot implementation — Evaluation",
     "page": 7,
