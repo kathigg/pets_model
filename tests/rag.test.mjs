@@ -101,6 +101,19 @@ test('synthetic-data advice leaves the MDI example to a separate linked card', a
   assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
 });
 
+test('public sensitivity answer continues the synthetic case instead of triggering protected-data review', async () => {
+  const model = recordingModel(ids => [{ text: 'Synthetic test data still need utility and disclosure review.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: 'Already public', intent: 'choose',
+    profile: { goal: 'test', holders: 'one', sensitivity: 'public', capacity: 'low' },
+    context: [{ role: 'assistant', text: 'How sensitive are the source records?' }]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.equal(model.calls.length, 1);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /"sensitivity":"public"/);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /"separate_mdi_case_card":true/);
+});
+
 test('clean-room context survives a short case-detail reply', async () => {
   const model = recordingModel(ids => [{ text: 'The matching design depends on the agreed identifiers and access controls.', source_ids: [ids[0]] }]);
   await answerWithRag({

@@ -377,7 +377,7 @@ function caseDetails() {
       state.pendingQuestion = null;
       const answer = select.value ? profileLabel(key, select.value) : 'Not answered';
       addMessage('user', `${field.label} ${answer}`);
-      showRecommendation(`Case detail: ${field.label} ${answer}`);
+      showRecommendation(answer);
     });
     label.append(select);
     editor.append(label);
@@ -423,7 +423,7 @@ function followupChoices(question) {
       state.profile[question.field] = value;
       state.pendingQuestion = null;
       addMessage('user', label);
-      showRecommendation(`Case detail: ${question.text} ${label}`);
+      showRecommendation(label);
     });
     choices.append(button);
   });
