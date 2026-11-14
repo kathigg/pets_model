@@ -55,7 +55,8 @@ test('linkage-variable advice is prompted for case context, not a universal fiel
   assert.equal(response.status, 'ok');
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /no single field is best/);
-  assert.match(prompt, /mdi-ar-report-linkja-results/);
+  assert.match(prompt, /uk-linkage-quality-assessment/);
+  assert.doesNotMatch(prompt, /mdi-ar-report-linkja-results|mdi-dc-report-triangulation/);
 });
 
 test('a linkage example follow-up retrieves detailed MDI public cases', async () => {

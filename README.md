@@ -10,7 +10,7 @@ A chatbot for exploring privacy-enhancing technologies (PETs) in education data 
 
 ## How the chatbot works
 
-The app uses 52 draft, original summaries linked to public sources. Some have received a [public-source spot check](docs/SOURCE_AUDIT.md); none has a recorded expert approval. It first recognizes simple chat and incomplete use cases, then asks for the purpose and data facts needed to choose PETs. These turns have no citations. For specific PET questions and sufficiently described use cases, it retrieves public guidance and asks Gemini for a cited answer. Follow-up questions preserve the earlier topic; package comparisons use official package documentation, and requests for MDI examples can retrieve detailed public pilot summaries. Relevant [MDI PET resources](https://mdi.georgetown.edu/pets/) get a small priority boost, while specialist legal and technical sources support their respective claims. Prior pilots are examples only when asked for them. The server checks citation IDs, while the “Why this answer” panel identifies draft summaries rather than claiming verbatim quotations. Inspectable rules add PET combinations, caveats, alternatives, and missing facts. If Gemini is unavailable or fails validation, the browser uses the same intake logic or shows a local rule or retrieval answer.
+The app uses 53 draft, original summaries linked to public sources. Some have received a [public-source spot check](docs/SOURCE_AUDIT.md); none has a recorded expert approval. It first recognizes simple chat and incomplete use cases, then asks for the purpose and data facts needed to choose PETs. These turns have no citations. For specific PET questions and sufficiently described use cases, it retrieves public guidance and asks Gemini for a cited answer. Follow-up questions preserve the earlier topic; package comparisons use official package documentation, and requests for MDI examples can retrieve detailed public pilot summaries. Relevant [MDI PET resources](https://mdi.georgetown.edu/pets/) get a small priority boost, while specialist legal and technical sources support their respective claims. Prior pilots are examples only when asked for them. The server checks citation IDs, while the “Why this answer” panel identifies draft summaries rather than claiming verbatim quotations. Inspectable rules add PET combinations, caveats, alternatives, and missing facts. If Gemini is unavailable or fails validation, the browser uses the same intake logic or shows a local rule or retrieval answer.
 
 The hosted chatbot uses public PET sources only. Confidential NYSED meeting notes remain local and are neither uploaded nor used by the hosted model.
 
@@ -62,7 +62,7 @@ npm run check
 npm run build
 ```
 
-`npm run check` validates corpus metadata and rule citations, runs decision, endpoint, and retrieval tests, and evaluates 17 synthetic retrieval questions. These checks do not establish expert accuracy, legal compliance, privacy protection, or source currency. Expert-labeled cases and privacy, utility, and security reviews are needed before agency use.
+`npm run check` validates corpus metadata and rule citations, runs decision, endpoint, and retrieval tests, and evaluates 18 synthetic retrieval questions. These checks do not establish expert accuracy, legal compliance, privacy protection, or source currency. Expert-labeled cases and privacy, utility, and security reviews are needed before agency use.
 
 ## License
 

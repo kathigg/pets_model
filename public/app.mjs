@@ -558,26 +558,25 @@ function isLegalQuestion(text) {
 }
 
 function legalMessage(query) {
-  const ferpa = /\bferpa\b/i.test(query);
   const uk = /\b(uk|united kingdom|britain|ico)\b/i.test(query);
-  const hits = retrieve(state.index, ferpa || uk ? query : 'FERPA student education records data sharing', { limit: 20 })
-    .filter(hit => {
-      const host = new URL(hit.document.url).hostname;
-      return uk ? host === 'ico.org.uk' || host === 'www.gov.uk' : host === 'studentprivacy.ed.gov';
-    }).slice(0, 2);
-  state.evidence = hits;
+  const resources = uk ? [
+    ['ICO data-sharing guidance', 'https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-sharing/'],
+    ['UK PET adoption guide', 'https://www.gov.uk/data-ethics-guidance/privacy-enhancing-technologies-adoption-guide']
+  ] : [
+    ['U.S. Education Department: privacy and data sharing', 'https://studentprivacy.ed.gov/privacy-and-data-sharing'],
+    ['PTAC: data-sharing agreement assistance', 'https://studentprivacy.ed.gov/request-ptac-training-or-technical-assistance']
+  ];
+  state.evidence = [];
   state.pendingQuestion = null;
   const answer = el('div', 'answer');
   answer.append(el('h2', 'answer-title', 'Ask a privacy or legal reviewer'));
   answer.append(el('p', 'answer-lead answer-warning', 'A chat cannot confirm whether this use or disclosure is allowed. A reviewer needs the purpose, data, agreements, and people receiving the result.'));
-  if (hits.length) {
-    const reading = el('p', 'background-reading', 'Background reading: ');
-    hits.forEach((hit, index) => {
-      if (index) reading.append(document.createTextNode(' · '));
-      reading.append(safeLink(hit.document.url, hit.document.title, 'inline-citation'));
-    });
-    answer.append(reading);
-  }
+  const reading = el('p', 'background-reading', 'Helpful resources: ');
+  resources.forEach(([title, url], index) => {
+    if (index) reading.append(document.createTextNode(' · '));
+    reading.append(safeLink(url, title, 'inline-citation'));
+  });
+  answer.append(reading);
   return answer;
 }
 

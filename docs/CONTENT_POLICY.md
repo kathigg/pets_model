@@ -1,6 +1,6 @@
 # Public source policy
 
-Only public PET resources may enter `public/data/sources.json`. Each chunk is a short original paraphrase tied to a specific URL and publisher, with a draft date, review status, jurisdiction, and source role. The current 52 summaries are drafts: their source links and metadata have been recorded, but their claims have not received a documented source-by-source expert review. Do not copy paragraphs or tables wholesale. A source title or URL does not establish publication rights for an attached file.
+Only public PET resources may enter `public/data/sources.json`. Each chunk is a short original paraphrase tied to a specific URL and publisher, with a draft date, review status, jurisdiction, and source role. The current 53 summaries are drafts: their source links and metadata have been recorded, but their claims have not received a documented source-by-source expert review. Do not copy paragraphs or tables wholesale. A source title or URL does not establish publication rights for an attached file.
 
 ## Review gate
 

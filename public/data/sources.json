@@ -1039,5 +1039,19 @@
     "drafted_at": "2026-11-13",
     "review_status": "draft",
     "reviewed_at": null
+  },
+  {
+    "id": "uk-linkage-quality-assessment",
+    "title": "Assessing linkage-variable quality",
+    "url": "https://www.gov.uk/government/publications/joined-up-data-in-government-the-future-of-data-linking-methods/quality-assessment-in-data-linkage",
+    "publisher": "UK Government Analysis Function",
+    "year": 2021,
+    "tags": ["record_linkage", "linkage", "matching", "identifiers", "data_quality", "missingness", "technical_guidance"],
+    "text": "This government technical guide says linkage errors depend on the quality and completeness of the identifying fields available in each dataset. Fields that are missing, inconsistent, or insufficiently distinguishing can cause missed or false links, regardless of the matching method. Choose and assess common identifiers in light of the intended analysis, then measure false and missed links. This is technical guidance, not authority to share data under U.S. law.",
+    "jurisdiction": "UK",
+    "source_role": "technical_guidance",
+    "drafted_at": "2026-11-13",
+    "review_status": "draft",
+    "reviewed_at": null
   }
 ]

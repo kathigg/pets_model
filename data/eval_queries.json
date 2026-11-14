@@ -15,5 +15,6 @@
   {"query":"Can multiple match-key PPRL compare misspellings approximately?","expected_ids":["nih-pprl-fuzzy"]},
   {"query":"Why can suppressing one school table cell fail when row totals are published?","expected_ids":["ed-complementary-suppression"]},
   {"query":"What is the difference between synthpop and tidysynthesis?","expected_ids":["cran-synthpop-package","cran-tidysynthesis-package"]},
-  {"query":"What did NYSED test with MDI for cross-agency linkage?","expected_ids":["mdi-nysed-clean-room-overview"]}
+  {"query":"What did NYSED test with MDI for cross-agency linkage?","expected_ids":["mdi-nysed-clean-room-overview"]},
+  {"query":"How does the quality of linkage variables affect false and missed matches?","expected_ids":["uk-linkage-quality-assessment"]}
 ]
