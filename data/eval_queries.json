@@ -13,5 +13,7 @@
   {"query":"What match agreement did Arkansas Linkja observe on synthetic records?","expected_ids":["mdi-ar-report-linkja-results"]},
   {"query":"What was difficult about synthetic longitudinal data for Nebraska NSWERS?","expected_ids":["mdi-nswers-report-longitudinal","mdi-nswers-report-utility"]},
   {"query":"Can multiple match-key PPRL compare misspellings approximately?","expected_ids":["nih-pprl-fuzzy"]},
-  {"query":"Why can suppressing one school table cell fail when row totals are published?","expected_ids":["ed-complementary-suppression"]}
+  {"query":"Why can suppressing one school table cell fail when row totals are published?","expected_ids":["ed-complementary-suppression"]},
+  {"query":"What is the difference between synthpop and tidysynthesis?","expected_ids":["cran-synthpop-package","cran-tidysynthesis-package"]},
+  {"query":"What did NYSED test with MDI for cross-agency linkage?","expected_ids":["mdi-nysed-clean-room-overview"]}
 ]

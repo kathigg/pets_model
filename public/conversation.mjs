@@ -14,13 +14,35 @@ export function conversationalReply(text) {
   if (/^(thanks|thank you|thank you so much|thx)$/.test(message)) {
     return 'You’re welcome. What else would you like to explore?';
   }
+  if (/^(?:do you have|do u have|is there|who is|can you be) (?:a |the |your )?privacy (?:or legal )?reviewer$/.test(message)) {
+    return 'I can explain privacy questions, but I cannot approve a data-sharing arrangement. Your organization needs to identify its authorized privacy or legal reviewer.';
+  }
   return null;
+}
+
+/** Keep short follow-ups attached to the subject already under discussion. */
+export function isTopicFollowup(text) {
+  const message = String(text || '').trim();
+  return message.length <= 160 && (
+    /\b(it|its|they|them|their|that|this|those)\b/i.test(message) ||
+    /^\s*(tell me more|and how|and why|elaborate|expand(?: on that)?|what (?:are|would be) (?:some )?(?:good )?examples|(?:is there|do you have) (?:a |some )?resources?)\b/i.test(message)
+  );
+}
+
+export function classifyMessage(text, inferred = {}, { hasTopic = false, mode = 'learn' } = {}) {
+  const message = String(text || '').trim();
+  if (mode === 'learn' && hasTopic && isTopicFollowup(message)) return 'learn';
+  if (/\b(plan|pilot|implement|evaluate|roll.?out|deployment|how would we build)\b/i.test(message)) return 'plan';
+  if (/^\s*(what is|what are|what's the difference|what is the difference|what's (?:the )?best practice|what is (?:the )?best practice|what are (?:the )?best practices|explain|define|how does|how do|when is|when does|tell me about|compare)\b/i.test(message)
+    && !/\b(we need|our (case|data|agency)|for (?:us|our)|which should we|recommend for us)\b/i.test(message)) return 'learn';
+  if (Object.keys(inferred).length || /\b(recommend|choose|best|which pet|what should|our case|we need|use case)\b/i.test(message)) return 'choose';
+  return 'learn';
 }
 
 /** Ask for the case facts that determine a PET choice before retrieving studies. */
 export function openingUseCaseQuestion(text, profile = {}, context = []) {
   const message = String(text || '');
-  const factualQuestion = /^\s*(?:what is|what are|explain|define|how does|how do|tell me about|compare)\b/i.test(message);
+  const factualQuestion = /^\s*(?:what is|what are|what's (?:the )?best practice|explain|define|how does|how do|tell me about|compare)\b/i.test(message);
   if (factualQuestion || conversationalReply(message)) return null;
   const caseCue = /\b(?:i|we|my|our|us|i'm|i’d|i'd|we're|we’d|we'd)\b/i.test(message)
     && /\b(?:data|records?|information|dataset|student|school|agency|department|project|use\s*case|results?|statistics|outputs?|dashboards?)\b/i.test(message)

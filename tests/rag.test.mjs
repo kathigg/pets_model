@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { answerWithRag } from '../server/rag.mjs';
-import { answerToCaseQuestion, conversationalReply, openingUseCaseQuestion } from '../public/conversation.mjs';
+import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from '../public/conversation.mjs';
 import { inferProfile } from '../public/engine.mjs';
 
 test('greetings use Gemini as conversation without PET citations', async () => {
@@ -26,6 +26,57 @@ test('asking the chatbot its name never retrieves name-matched pilot reports', a
   assert.deepEqual(response.sources, []);
   assert.match(response.segments[0].text, /PETs Model/);
   assert.doesNotMatch(model.calls[0].body.contents[0].parts[0].text, /DC ETEP pilot: two exact PSI joins/);
+});
+
+test('package comparison and clarification remain informational turns', () => {
+  assert.equal(classifyMessage("what's the difference between synthpop and tidysynthesis", {}), 'learn');
+  assert.equal(classifyMessage("what's the best practice linkage variable in cross agency", { goal: 'link' }), 'learn');
+  assert.equal(isTopicFollowup('they are synthetic data packages'), true);
+  assert.equal(classifyMessage('they are synthetic data packages', { goal: 'synthetic' }, { hasTopic: true, mode: 'learn' }), 'learn');
+  assert.equal(isTopicFollowup('what are good examples'), true);
+  assert.equal(isTopicFollowup('elaborate'), true);
+  assert.match(conversationalReply('do u have a privacy reviewer?'), /cannot approve/);
+});
+
+test('package comparison retrieves both official package documents and excludes unrelated pilots', async () => {
+  const model = recordingModel(ids => [{ text: 'Both are R packages for synthetic data, with different workflow controls.', source_ids: ids }]);
+  const response = await answerWithRag({ message: "what's the difference between synthpop and tidysynthesis", intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.deepEqual(response.sources.map(source => source.id).sort(), ['cran-synthpop-package', 'cran-tidysynthesis-package']);
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.doesNotMatch(prompt, /MDI and D\.C\. ETEP used mock datasets/);
+});
+
+test('linkage-variable advice is prompted for case context, not a universal field or tool', async () => {
+  const model = recordingModel(ids => [{ text: 'The fields depend on what each agency can reliably use. Which common identifiers are available?', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({ message: "what's the best practice linkage variable in cross agency", intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /no single field is best/);
+  assert.match(prompt, /mdi-ar-report-linkja-results/);
+});
+
+test('a linkage example follow-up retrieves detailed MDI public cases', async () => {
+  const model = recordingModel(ids => [{ text: 'MDI tested cross-jurisdiction linkage with mock D.C. records.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: 'what are good examples', topic: 'cross-agency record linkage', intent: 'learn',
+    context: [{ role: 'user', text: 'What is cross-agency record linkage?' }]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /mdi-dc-report-triangulation/);
+  assert.match(prompt, /mdi-nysed-clean-room-overview/);
+  assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
+});
+
+test('request to secure agency agreement for sharing PII goes to human review without a Gemini call', async () => {
+  let calls = 0;
+  const response = await answerWithRag({ message: 'how do I have other agencies agree sharing PII with me', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: async () => { calls++; throw new Error('unexpected'); } });
+  assert.equal(response.status, 'review');
+  assert.equal(calls, 0);
 });
 
 test('an underspecified data-sharing use case asks for purpose without a pilot citation', async () => {

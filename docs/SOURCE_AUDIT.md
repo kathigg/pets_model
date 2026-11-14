@@ -1,6 +1,6 @@
 # Public-source spot check
 
-**October 28, 2026.** This is a source-to-summary spot check, not PET, legal, or publication approval. All 47 corpus passages remain `draft` pending a recorded expert review.
+**October 28, 2026.** This is a source-to-summary spot check, not PET, legal, or publication approval. The original 47 corpus passages remain `draft` pending a recorded expert review.
 
 | Public source checked | Corpus passages | Finding |
 | --- | --- | --- |
@@ -16,3 +16,5 @@
 | [2019 multiple-match-key PPRL paper](https://pubmed.ncbi.nlm.nih.gov/32935028/) | `nih-pprl-fuzzy` | The paper distinguishes approximate Bloom-filter matching from its own multiple-match-key method. Clarified that distinction. The PMC full page met an automated browser check, so this check used the indexed primary paper and PubMed abstract; a specialist should inspect the full paper. |
 
 This spot check covered the central claims in all current source groups, but it was not a line-by-line expert review. A PET specialist should review technical claims, cited page numbers, caveats, and answer quality before agency-facing use. Legal guidance also needs a qualified reviewer and a source-currency check. Retrieval regression questions cover the three public pilot reports; these tests check retrieval, not whether the generated answer is correct.
+
+**November 13, 2026 addition.** Five draft summaries were added from [MDI's public use-case page](https://mdi.georgetown.edu/pets/use-cases/), the official [synthpop CRAN page](https://cran.r-project.org/web/packages/synthpop/index.html), and the official [tidysynthesis CRAN page](https://cran.r-project.org/web/packages/tidysynthesis/index.html). The MDI page directly supports short NYSED, U.S. Education Department, and Connecticut pilot overviews; it does not provide quantified results for those pilots. The NYSED report link on the MDI page returned HTTP 404 during this check, so no details from that report or confidential NYSED meeting notes were added. The package summaries describe documented functions and workflows, without claiming either package guarantees safe release. The corpus now has 52 draft summaries; these five additions still need expert review.

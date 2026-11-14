@@ -83,6 +83,7 @@ export async function handleChatRequest(request, {
   }
   if (!input || typeof input !== 'object' || Array.isArray(input) ||
       typeof input.message !== 'string' || !input.message.trim() || input.message.length > MAX_MESSAGE_CHARS ||
+      (input.topic !== undefined && (typeof input.topic !== 'string' || input.topic.length > MAX_MESSAGE_CHARS)) ||
       !['learn', 'choose', 'plan'].includes(input.intent)) {
     return json({ error: 'Invalid question.' }, 400);
   }
@@ -92,6 +93,7 @@ export async function handleChatRequest(request, {
   try {
     const result = await answer({
       message: input.message,
+      topic: input.topic,
       intent: input.intent,
       profile: input.profile,
       context: input.context

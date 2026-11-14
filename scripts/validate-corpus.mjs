@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { PETS } from '../public/engine.mjs';
 
 const docs = JSON.parse(readFileSync(new URL('../public/data/sources.json', import.meta.url), 'utf8'));
-const hosts = new Set(['mdi.georgetown.edu', 'www.nist.gov', 'csrc.nist.gov', 'nvlpubs.nist.gov', 'ico.org.uk', 'studentprivacy.ed.gov', 'www.gov.uk', 'pmc.ncbi.nlm.nih.gov', 'georgetown.app.box.com']);
+const hosts = new Set(['mdi.georgetown.edu', 'www.nist.gov', 'csrc.nist.gov', 'nvlpubs.nist.gov', 'ico.org.uk', 'studentprivacy.ed.gov', 'www.gov.uk', 'pmc.ncbi.nlm.nih.gov', 'georgetown.app.box.com', 'cran.r-project.org']);
 const publicReportShares = new Set([
   '/s/vid4zxlg2khg79v8vrjsjbym1g25c04w', // DC ETEP, linked from MDI's public use-case page
   '/s/1scuwwt0yynk31nbgzpvl87ucfb99rlg', // Arkansas
@@ -28,6 +28,7 @@ for (const [i, doc] of docs.entries()) {
   try {
     const url = new URL(doc.url);
     if (url.protocol !== 'https:' || !hosts.has(url.hostname)) fail('uses a source host outside the allowlist');
+    if (url.hostname === 'cran.r-project.org' && !/^\/web\/packages\/(?:synthpop|tidysynthesis)\/index\.html$/.test(url.pathname)) fail('uses an unapproved CRAN package page');
     if (doc.page !== undefined && (!Number.isInteger(doc.page) || doc.page < 1 || url.hash !== `#page=${doc.page}`)) fail('has a page number that does not match its URL');
     if (doc.page !== undefined && (!doc.section || !doc.source_document)) fail('has no document title or section for its page citation');
     if (url.hostname === 'georgetown.app.box.com') {

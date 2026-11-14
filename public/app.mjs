@@ -1,8 +1,8 @@
 import { FIELDS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel } from './engine.mjs';
 import { createIndex, retrieve, evidenceFor } from './retrieval.mjs';
-import { answerToCaseQuestion, conversationalReply, openingUseCaseQuestion } from './conversation.mjs';
+import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from './conversation.mjs';
 import { clearHistory, loadHistory, saveHistory } from './history.mjs';
-import { matchingWords, sourceNoteExcerpt } from './evidence-notes.mjs';
+import { sourceNoteExcerpt } from './evidence-notes.mjs';
 
 const $ = selector => document.querySelector(selector);
 const el = (tag, className = '', text) => {
@@ -198,7 +198,7 @@ function sourceDetails(hits, extra, query = '') {
   const details = el('details', 'answer-details');
   details.append(el('summary', '', 'Why this answer'));
   const content = el('div', 'answer-detail-content');
-  content.append(el('p', 'review-note', 'Evidence below is from draft source notes. Open the original to verify.'));
+  content.append(el('p', 'review-note', 'Draft summaries of public sources. Open the original to verify.'));
   if (extra) content.append(extra);
   const unique = hits.filter((hit, i) => hits.findIndex(x => x.document.id === hit.document.id) === i);
   if (unique.length) {
@@ -206,11 +206,9 @@ function sourceDetails(hits, extra, query = '') {
     unique.forEach(({ document: doc }) => {
       const item = el('li', 'source-evidence');
       item.append(safeLink(doc.url, `${doc.title} ↗`, 'citation'));
-      const words = matchingWords(query, `${doc.title} ${doc.text}`);
-      if (words.length) item.append(el('p', 'source-match', `Matches your question: ${words.join(', ')}`));
       const excerpt = sourceNoteExcerpt(doc.text, query);
       if (excerpt) {
-        item.append(el('p', 'source-match', 'Source note excerpt:'));
+        item.append(el('p', 'source-match', 'Relevant summary:'));
         item.append(el('blockquote', 'source-excerpt', excerpt));
       }
       list.append(item);
@@ -263,7 +261,7 @@ function citedParagraphs(model) {
     const paragraph = el('p', 'source-answer', `${segment.text} `);
     segment.docs.forEach((doc, i) => {
       if (i) paragraph.append(document.createTextNode(' '));
-      paragraph.append(safeLink(doc.url, segment.docs.length === 1 ? 'Source ↗' : `${i + 1} ↗`, 'inline-citation'));
+      paragraph.append(safeLink(doc.url, `${doc.title} ↗`, 'inline-citation'));
     });
     content.append(paragraph);
   });
@@ -281,7 +279,7 @@ function modelMessage(model, title = '', query = '') {
   return answer;
 }
 
-async function requestModel(intent, query) {
+async function requestModel(intent, query, topic = '') {
   if (state.apiUnavailable) return { unavailable: true };
   const controller = new AbortController();
   state.controller = controller;
@@ -293,7 +291,7 @@ async function requestModel(intent, query) {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ message: query, intent, profile: cleanProfile(state.profile), context }),
+      body: JSON.stringify({ message: query, intent, topic, profile: cleanProfile(state.profile), context }),
       cache: 'no-store',
       signal: controller.signal
     });
@@ -328,7 +326,7 @@ function pendingMessage() {
   return row;
 }
 
-async function modelTurn(intent, query, fallback, title = '') {
+async function modelTurn(intent, query, fallback, title = '', topic = '') {
   if (state.apiUnavailable) {
     addMessage('assistant', localAnswer(fallback(), true));
     return;
@@ -338,7 +336,7 @@ async function modelTurn(intent, query, fallback, title = '') {
   updateControls();
   setMascot('waiting');
   const pending = pendingMessage();
-  const model = await requestModel(intent, query);
+  const model = await requestModel(intent, query, topic);
   if (turn !== state.turn) return;
   pending.remove();
   state.busy = false;
@@ -514,7 +512,7 @@ function learningMessage(query, retrievalQuery = query) {
     if (seen.has(hit.document.text)) return;
     seen.add(hit.document.text);
     const paragraph = el('p', 'source-answer', `${hit.document.text} `);
-    paragraph.append(safeLink(hit.document.url, 'Source ↗', 'inline-citation'));
+    paragraph.append(safeLink(hit.document.url, `${hit.document.title} ↗`, 'inline-citation'));
     answer.append(paragraph);
   });
   answer.append(sourceDetails(hits, null, retrievalQuery));
@@ -551,6 +549,9 @@ function planningMessage(query) {
 }
 
 function isLegalQuestion(text) {
+  if (/\b(?:pii|personally identifiable|student records?)\b/i.test(text)
+    && /\b(?:agree|approval|permission|persuad\w*|convinc\w*|sign off)\b/i.test(text)
+    && /\b(?:shar\w*|transferr?\w*|send)\b/i.test(text)) return true;
   const clause = text.trim().split(/[.!?]/).map(x => x.trim()).filter(Boolean).at(-1) || text;
   const terms = /\b(ferpa|gdpr|compliance|compliant|legal|legally|law|lawful|regulation|regulatory|permitted|allowed|consent|authorization|authority|data.sharing agreement)\b/i;
   return terms.test(clause) && (/\b(under|according to)\b/i.test(clause) || /^\s*(can|may|must|should|do|does|is|are|what|how|which|whether|ferpa|gdpr|legal|compliance)\b/i.test(clause));
@@ -559,17 +560,24 @@ function isLegalQuestion(text) {
 function legalMessage(query) {
   const ferpa = /\bferpa\b/i.test(query);
   const uk = /\b(uk|united kingdom|britain|ico)\b/i.test(query);
-  const hits = (ferpa || uk ? retrieve(state.index, query, { limit: 20 }) : [])
+  const hits = retrieve(state.index, ferpa || uk ? query : 'FERPA student education records data sharing', { limit: 20 })
     .filter(hit => {
       const host = new URL(hit.document.url).hostname;
-      return ferpa ? host === 'studentprivacy.ed.gov' : host === 'ico.org.uk' || host === 'www.gov.uk';
-    }).slice(0, 4);
+      return uk ? host === 'ico.org.uk' || host === 'www.gov.uk' : host === 'studentprivacy.ed.gov';
+    }).slice(0, 2);
   state.evidence = hits;
   state.pendingQuestion = null;
   const answer = el('div', 'answer');
   answer.append(el('h2', 'answer-title', 'Ask a privacy or legal reviewer'));
   answer.append(el('p', 'answer-lead answer-warning', 'A chat cannot confirm whether this use or disclosure is allowed. A reviewer needs the purpose, data, agreements, and people receiving the result.'));
-  answer.append(sourceDetails(hits, null, query));
+  if (hits.length) {
+    const reading = el('p', 'background-reading', 'Background reading: ');
+    hits.forEach((hit, index) => {
+      if (index) reading.append(document.createTextNode(' · '));
+      reading.append(safeLink(hit.document.url, hit.document.title, 'inline-citation'));
+    });
+    answer.append(reading);
+  }
   return answer;
 }
 
@@ -581,28 +589,16 @@ function isCaseContinuation(text) {
   return /^\s*(also|and|what if|in this case|for this case|in the same case|for the same project|we also|same case|actually|correction|instead)\b/i.test(text);
 }
 
-function isTopicFollowup(text) {
-  return text.length <= 100 && (/\b(it|its|they|them|their|that|this|those)\b/i.test(text) || /^\s*(tell me more|and how|and why)\b/i.test(text));
-}
-
-function classify(text, inferred) {
-  if (/\b(plan|pilot|implement|evaluate|roll.?out|deployment|how would we build)\b/i.test(text)) return 'plan';
-  if (/^\s*(what is|what are|explain|define|how does|how do|when is|when does|tell me about|compare)\b/i.test(text)
-    && !/\b(we need|our (case|data|agency)|which should we|recommend for us)\b/i.test(text)) return 'learn';
-  if (Object.keys(inferred).length || /\b(recommend|choose|best|which pet|what should|our case|we need|use case)\b/i.test(text)) return 'choose';
-  return 'learn';
-}
-
 function send(text) {
   const query = text.trim().slice(0, 1200);
   if (!query || state.sourceStatus !== 'ready' || state.busy) return false;
   const inferred = inferProfile(query);
   if (/\b(?:won't|will not|do not|never|no plans? to)\b.{0,35}\b(?:publish|release|share)\b.{0,60}\b(?:names?|identifiers?|pii)\b/i.test(query)) inferred.directRelease = 'no';
-  const newCase = startsNewCase(query) || Boolean(inferred.goal && state.profile.goal && inferred.goal !== state.profile.goal && !isCaseContinuation(query));
+  const followup = Boolean(state.mode === 'learn' && state.lastTopicQuery && isTopicFollowup(query));
+  const newCase = startsNewCase(query) || Boolean(!followup && inferred.goal && state.profile.goal && inferred.goal !== state.profile.goal && !isCaseContinuation(query));
   if (newCase) reset();
   const pendingAnswer = newCase ? null : answerToCaseQuestion(state.pendingQuestion, query);
-  const followup = Boolean(state.mode === 'learn' && state.lastTopicQuery && !inferred.goal && isTopicFollowup(query));
-  const intent = pendingAnswer ? 'choose' : isLegalQuestion(query) ? 'legal' : followup ? 'learn' : classify(query, inferred);
+  const intent = pendingAnswer ? 'choose' : isLegalQuestion(query) ? 'legal' : classifyMessage(query, inferred, { hasTopic: followup, mode: state.mode });
   if (intent === 'choose' || intent === 'plan') {
     state.profile = { ...state.profile, ...inferred };
     if (pendingAnswer) state.profile[state.pendingQuestion.field] = pendingAnswer;
@@ -620,7 +616,7 @@ function send(text) {
   else if (intent === 'choose') { showRecommendation(query); state.lastTopicQuery = query; }
   else {
     const retrievalQuery = followup ? `${state.lastTopicQuery} ${query}` : query;
-    void modelTurn('learn', retrievalQuery, () => learningMessage(query, retrievalQuery));
+    void modelTurn('learn', query, () => learningMessage(query, retrievalQuery), '', followup ? state.lastTopicQuery : '');
     if (!followup) state.lastTopicQuery = query;
   }
   return true;
