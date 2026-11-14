@@ -6,7 +6,7 @@
 
 A chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains options, asks for the facts needed to assess a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
 
-**Hosting status (November 3, 2026):** The [private Cloud Run chatbot](https://pets-model-850678646784.us-east1.run.app) is live in `mdi-yimingwu-pets`. Identity-Aware Proxy (IAP) requires a Google sign-in; `kh1399@georgetown.edu` successfully opened it. Its dedicated runtime account called Vertex AI Gemini and returned cited answers in two small live tests. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) remains separate and uses the public-source browser fallback. Access for the other named teammates still needs administrator confirmation.
+**Hosting status (November 13, 2026):** The [private Cloud Run chatbot](https://pets-model-850678646784.us-east1.run.app) is live in `mdi-yimingwu-pets`, revision `pets-model-00017-fhd`. Identity-Aware Proxy (IAP) requires a Google sign-in. This revision contains the conversation and retrieval improvements described below; its deployment, traffic, IAP setting, and service identity were verified, but a live chat test was not completed after this rollout. Earlier small live tests confirmed the runtime account could call Vertex AI Gemini. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) remains separate and uses the public-source browser fallback. Access for the other named teammates still needs administrator confirmation.
 
 ## How the chatbot works
 
