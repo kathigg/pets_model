@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessCase, cleanProfile, inferProfile, nextQuestion } from '../public/engine.mjs';
+import { assessCase, cleanProfile, inferProfile, nextQuestion, recommendationEvidenceCodes } from '../public/engine.mjs';
 
 const codes = xs => xs.map(x => x.code);
 
@@ -91,6 +91,13 @@ test('test-data route never claims synthetic records are intrinsically private',
   assert.ok(codes(result.primary).includes('synthetic'));
   assert.ok(codes(result.complementary).includes('dp'));
   assert.ok(result.avoid.some(x => /not infer.*private/i.test(x.reason)));
+});
+
+test('public synthetic-data recommendations keep technical evidence without FERPA guidance', () => {
+  const publicCase = assessCase({ goal: 'test', holders: 'one', sensitivity: 'public', capacity: 'low' });
+  assert.deepEqual(recommendationEvidenceCodes(publicCase), ['synthetic']);
+  const protectedCase = assessCase({ goal: 'test', holders: 'one', sensitivity: 'protected', capacity: 'medium', authority: 'yes' });
+  assert.ok(recommendationEvidenceCodes(protectedCase).includes('governance'));
 });
 
 test('natural-language intake keeps unknowns unknown and captures explicit constraints', () => {

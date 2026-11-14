@@ -1,4 +1,4 @@
-import { FIELDS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel } from './engine.mjs';
+import { FIELDS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel, recommendationEvidenceCodes } from './engine.mjs';
 import { createIndex, retrieve, evidenceFor } from './retrieval.mjs';
 import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from './conversation.mjs';
 import { clearHistory, loadHistory, saveHistory } from './history.mjs';
@@ -469,7 +469,7 @@ function recommendationMessage(result, query, model = null) {
   state.pendingQuestion = question;
   if (question) answer.append(followupQuestion(question));
 
-  const codes = [...result.primary, ...result.complementary, ...result.alternatives].map(entry => entry.code);
+  const codes = recommendationEvidenceCodes(result);
   const ruleHits = codes.length ? evidenceFor(state.index, query, codes, 5) : [];
   const hits = [...ruleHits, ...(model?.hits || []), ...(relatedDocument ? [{ document: relatedDocument }] : [])]
     .filter((hit, i, all) => all.findIndex(entry => entry.document.id === hit.document.id) === i);

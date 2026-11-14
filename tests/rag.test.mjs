@@ -97,6 +97,8 @@ test('synthetic-data advice leaves the MDI example to a separate linked card', a
   assert.equal(response.status, 'ok');
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /"separate_mdi_case_card":true/);
+  assert.doesNotMatch(prompt, /ed-ferpa-deidentification-standard/);
+  assert.match(prompt, /Add one short cited segment with a material limitation or next check/);
   assert.match(prompt, /interface separately shows one short, linked public MDI example/);
   assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
 });

@@ -315,6 +315,15 @@ export function nextQuestion(assessment) {
   return assessment.missing.filter(x => assessment.profile[x.field] !== 'unknown').sort((a, b) => priority.indexOf(a.field) - priority.indexOf(b.field))[0] || null;
 }
 
+/** Keep public or internal synthetic-data advice on technical evidence. */
+export function recommendationEvidenceCodes(assessment) {
+  const codes = [...assessment.primary, ...assessment.complementary, ...assessment.alternatives].map(item => item.code);
+  if (assessment.profile.goal === 'test' && ['public', 'internal'].includes(assessment.profile.sensitivity)) {
+    return codes.filter(code => code !== 'governance');
+  }
+  return codes;
+}
+
 export function profileLabel(key, value) {
   return FIELDS[key]?.options.find(([id]) => id === value)?.[1] || value;
 }
