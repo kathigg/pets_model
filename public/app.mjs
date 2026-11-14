@@ -3,6 +3,7 @@ import { createIndex, retrieve, evidenceFor } from './retrieval.mjs';
 import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from './conversation.mjs';
 import { clearHistory, loadHistory, saveHistory } from './history.mjs';
 import { sourceNoteExcerpt } from './evidence-notes.mjs';
+import { relatedMdiCase } from './related-cases.mjs';
 
 const $ = selector => document.querySelector(selector);
 const el = (tag, className = '', text) => {
@@ -450,12 +451,27 @@ function recommendationMessage(result, query, model = null) {
 
   if (model) answer.append(citedParagraphs(model));
 
+  const caseText = state.transcript.filter(entry => entry.role === 'user').map(entry => entry.text).join(' ');
+  const relatedCase = relatedMdiCase(result, caseText || query);
+  const alreadyShown = relatedCase && state.transcript.some(entry =>
+    entry.role === 'assistant' && entry.text.includes(`Similar MDI use case: ${relatedCase.name}`));
+  const relatedDocument = relatedCase && !alreadyShown && state.index.docs.find(doc =>
+    doc.id === relatedCase.sourceId && doc.source_role === 'case_study' && doc.id.startsWith('mdi-'));
+  if (relatedDocument) {
+    const caseNote = el('div', 'related-case');
+    caseNote.append(el('strong', '', `Similar MDI use case: ${relatedCase.name}`));
+    const summary = el('p', '', `${relatedCase.summary} `);
+    summary.append(safeLink(relatedDocument.url, 'Public source ↗', 'inline-citation'));
+    caseNote.append(summary);
+    answer.append(caseNote);
+  }
+
   state.pendingQuestion = question;
   if (question) answer.append(followupQuestion(question));
 
   const codes = [...result.primary, ...result.complementary, ...result.alternatives].map(entry => entry.code);
   const ruleHits = codes.length ? evidenceFor(state.index, query, codes, 5) : [];
-  const hits = [...ruleHits, ...(model?.hits || [])]
+  const hits = [...ruleHits, ...(model?.hits || []), ...(relatedDocument ? [{ document: relatedDocument }] : [])]
     .filter((hit, i, all) => all.findIndex(entry => entry.document.id === hit.document.id) === i);
   state.evidence = hits;
   if (codes.length || result.avoid.length) answer.append(sourceDetails(hits, reasons(result), query));

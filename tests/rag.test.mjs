@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { answerWithRag } from '../server/rag.mjs';
 import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from '../public/conversation.mjs';
-import { inferProfile } from '../public/engine.mjs';
+import { assessCase, inferProfile } from '../public/engine.mjs';
+import { relatedMdiCase } from '../public/related-cases.mjs';
 
 test('greetings use Gemini as conversation without PET citations', async () => {
   assert.match(conversationalReply('hello!'), /^Hi!/);
@@ -70,6 +71,45 @@ test('a linkage example follow-up retrieves detailed MDI public cases', async ()
   assert.match(prompt, /mdi-dc-report-triangulation/);
   assert.match(prompt, /mdi-nysed-clean-room-overview/);
   assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
+});
+
+test('similar MDI case follows the described task, not just the agency name', () => {
+  const synthetic = assessCase({ goal: 'test', holders: 'one', sensitivity: 'internal', capacity: 'medium' });
+  assert.equal(relatedMdiCase(synthetic, 'We want fake data for NYSED')?.sourceId, 'mdi-nswers-report-utility');
+  assert.equal(relatedMdiCase(assessCase({ goal: 'test' }), 'We want fake data'), null);
+  assert.equal(relatedMdiCase(assessCase({ goal: 'test', sensitivity: 'protected' }), 'We want fake data'), null);
+
+  const linkage = { goal: 'link', holders: 'two', rawMove: 'no', output: 'rows', sensitivity: 'internal', capacity: 'medium', repeated: 'no' };
+  assert.equal(relatedMdiCase(assessCase({ ...linkage, match: 'exact' }), 'Link agency records')?.sourceId,
+    'mdi-dc-report-triangulation');
+  assert.equal(relatedMdiCase(assessCase({ ...linkage, match: 'fuzzy' }), 'Link agency records')?.sourceId,
+    'mdi-ar-report-probabilistic-gap');
+  assert.equal(relatedMdiCase(assessCase({ ...linkage, match: 'exact' }), 'Try a clean room for linkage')?.sourceId,
+    'mdi-nysed-clean-room-overview');
+});
+
+test('synthetic-data advice leaves the MDI example to a separate linked card', async () => {
+  const model = recordingModel(ids => [{ text: 'Purpose-built synthetic data can support testing, with disclosure and utility review.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: 'We want fake data to test our software.', intent: 'choose',
+    profile: { goal: 'test', holders: 'one', sensitivity: 'internal', capacity: 'medium' }
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /"separate_mdi_case_card":true/);
+  assert.match(prompt, /interface separately shows one short, linked public MDI example/);
+  assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
+});
+
+test('clean-room context survives a short case-detail reply', async () => {
+  const model = recordingModel(ids => [{ text: 'The matching design depends on the agreed identifiers and access controls.', source_ids: [ids[0]] }]);
+  await answerWithRag({
+    message: 'Exact or deterministic', intent: 'choose',
+    profile: { goal: 'link', holders: 'two', rawMove: 'no', match: 'exact', output: 'rows', sensitivity: 'internal', capacity: 'medium', repeated: 'no' },
+    context: [{ role: 'user', text: 'We want a clean room for cross-agency linkage.' }]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /"separate_mdi_case_card":true/);
 });
 
 test('elaborate focuses the last named pilot instead of repeating the whole example list', async () => {

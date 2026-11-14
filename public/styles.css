@@ -196,6 +196,9 @@ button:disabled { cursor: default; opacity: .55; }
 .pet-step p { margin: 3px 0 0; color: #41566c; font-size: 16px; line-height: 1.55; }
 .pet-step span { display: block; margin-top: 3px; color: #41566c; }
 .also-consider { margin-top: 17px !important; color: #43586d; font-size: 16px; }
+.related-case { margin-top: 18px; padding: 13px 15px; border-radius: 9px; background: #f2f8f7; }
+.related-case strong { color: var(--navy); font-size: 17px; }
+.related-case p { margin: 5px 0 0; color: #344c60; font-size: 17px; line-height: 1.5; }
 .plan-steps { margin: 15px 0 0; padding-left: 24px; }
 .plan-steps li { padding: 0 0 13px 5px; font-size: 17px; line-height: 1.5; }
 .plan-steps li::marker { color: var(--blue); font-weight: 700; }
