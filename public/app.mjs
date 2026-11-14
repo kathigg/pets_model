@@ -89,10 +89,11 @@ function openSavedChat(id) {
   state.lastTopicQuery = chat.lastTopicQuery;
   state.pendingQuestion = Object.hasOwn(FIELDS, chat.pendingField) && !state.profile[chat.pendingField]
     ? { field: chat.pendingField, text: FIELDS[chat.pendingField].label }
-    : nextQuestion(assessCase(state.profile));
+    : null;
   state.evidence = [];
   messages.replaceChildren();
   let lastQuestion = '';
+  let lastAssistantBubble = null;
   for (const message of state.transcript) {
     const row = el('div', `message-row ${message.role} restored`);
     const bubble = el('div', 'bubble');
@@ -103,8 +104,12 @@ function openSavedChat(id) {
         .filter(Boolean).map(document => ({ document }));
       if (hits.length) bubble.append(sourceDetails(hits, null, lastQuestion));
     }
+    if (message.role === 'assistant') lastAssistantBubble = bubble;
     row.append(bubble);
     messages.append(row);
+  }
+  if (state.pendingQuestion && state.transcript.at(-1)?.role === 'assistant' && lastAssistantBubble) {
+    lastAssistantBubble.append(followupChoices(state.pendingQuestion));
   }
   document.body.classList.toggle('has-messages', Boolean(state.transcript.length));
   history.activeId = chat.id;
@@ -404,6 +409,11 @@ function reasons(result) {
 function followupQuestion(question) {
   const follow = el('div', 'followup');
   follow.append(el('p', 'followup-question', question.text));
+  follow.append(followupChoices(question));
+  return follow;
+}
+
+function followupChoices(question) {
   const choices = el('div', 'choice-list');
   FIELDS[question.field].options.forEach(([value, label]) => {
     const button = el('button', 'choice', label);
@@ -416,8 +426,7 @@ function followupQuestion(question) {
     });
     choices.append(button);
   });
-  follow.append(choices);
-  return follow;
+  return choices;
 }
 
 function recommendationMessage(result, query, model = null) {
