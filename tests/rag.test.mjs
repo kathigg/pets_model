@@ -71,6 +71,21 @@ test('a linkage example follow-up retrieves detailed MDI public cases', async ()
   assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
 });
 
+test('elaborate focuses the last named pilot instead of repeating the whole example list', async () => {
+  const model = recordingModel(ids => [{ text: 'The D.C. pilot tested an intermediate linkage step.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: 'elaborate', topic: 'cross-agency record linkage', intent: 'learn',
+    context: [
+      { role: 'user', text: 'what are good examples' },
+      { role: 'assistant', text: 'The D.C. ETEP pilot tested cross-jurisdiction linkage.' }
+    ]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /mdi-dc-report-triangulation/);
+  assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview/);
+});
+
 test('request to secure agency agreement for sharing PII goes to human review without a Gemini call', async () => {
   let calls = 0;
   const response = await answerWithRag({ message: 'how do I have other agencies agree sharing PII with me', intent: 'learn' },

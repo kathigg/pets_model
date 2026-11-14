@@ -58,6 +58,7 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
     if (curated.length) return curated;
   }
   const lastUserTopic = context.filter(turn => turn.role === 'user').at(-1)?.text || '';
+  const lastAssistant = context.filter(turn => turn.role === 'assistant').at(-1)?.text || '';
   const query = intent === 'plan' ? message : `${topic || lastUserTopic} ${message}`;
   if (intent === 'learn' && /\bsynthpop\b/i.test(query) && /\btidysynthesis\b/i.test(query)) {
     return ['cran-synthpop-package', 'cran-tidysynthesis-package']
@@ -66,7 +67,13 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
   }
   const exampleFollowup = /\b(?:examples?|elaborate|expand)\b/i.test(message) || /\bexamples?\b/i.test(lastUserTopic);
   if (intent === 'learn' && exampleFollowup && /\b(?:link\w*|cross.agency|pprl|psi|match\w*)\b/i.test(query)) {
-    const prefer = /\b(?:new york|nysed)\b/i.test(query)
+    const named = /\b(?:elaborate|expand)\b/i.test(message) ? [
+      /\b(?:D\.?C\.?|ETEP)\b/i.test(lastAssistant) && ['mdi-dc-report-triangulation', 'mdi-dc-report-exact-limit'],
+      /\b(?:Arkansas|ARData|Linkja)\b/i.test(lastAssistant) && ['mdi-ar-report-linkja-results', 'mdi-ar-report-probabilistic-gap'],
+      /\b(?:NYSED|New York)\b/i.test(lastAssistant) && ['mdi-nysed-clean-room-overview'],
+      /\bConnecticut\b/i.test(lastAssistant) && ['mdi-ct-linkage-overview']
+    ].filter(Boolean).flat() : [];
+    const prefer = named.length ? named : /\b(?:new york|nysed)\b/i.test(query)
       ? ['mdi-nysed-clean-room-overview', 'mdi-dc-report-triangulation', 'mdi-ar-report-linkja-results', 'mdi-ct-linkage-overview']
       : ['mdi-dc-report-triangulation', 'mdi-ar-report-linkja-results', 'mdi-nysed-clean-room-overview', 'mdi-ct-linkage-overview'];
     const hits = prefer.map(id => index.docs.find(document => document.id === id)).filter(Boolean)
@@ -113,6 +120,7 @@ function taskPrompt({ message, intent, profile, context, assessment, hits, topic
     `For a use case, address the visitor's current needs. Do not lead with or copy a prior pilot; mention one only if the visitor asks for that example. Cite technical or legal guidance for relevant claims. MDI's public PET pages provide project context, not an automatic answer to the visitor's case.\n` +
     `If asked about the best linkage variable across agencies, explain that no single field is best for every case. Start with the matching purpose and what identifiers the parties can lawfully and reliably use; distinguish exact from approximate matching. Ask one brief question about the available common fields or their quality. Do not lead with hashing or Bloom filters.\n` +
     `If asked for examples or elaboration, give concrete details from the relevant MDI public case studies: who partnered, what was tested, and a documented result or limitation. Do not present a public overview as a full pilot report. If comparing named software packages, compare those packages directly using their own documentation; do not substitute a general synthetic-data overview.\n` +
+    `When the user says "elaborate" or "expand", focus on the example in the most recent assistant reply. Add its specific method and finding or limitation rather than repeating a general overview.\n` +
     `Preserve the decision rules' primary, complementary, alternative, missing-fact, and warning distinctions. A PET does not itself grant legal authority. Do not claim hashes or synthetic data are automatically anonymous, or confuse trusted research environments with trusted execution environments. For a case recommendation, do not ask a follow-up question; the interface handles that separately. For a general informational question, at most one targeted question is allowed. If details are missing, qualify the answer rather than pretending they are known.\n` +
     `Do not quote private material or make legal determinations. No markdown tables, headings, source URLs, or uncited claims. Return only the requested JSON.\n` +
     `TASK_JSON:\n${JSON.stringify(task)}`;
