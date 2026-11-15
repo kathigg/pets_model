@@ -76,3 +76,9 @@ test('published pilot passages answer report-specific questions', () => {
     assert.ok(retrieve(index, question, { limit: 5 }).some(x => x.document.id === expected), question);
   }
 });
+
+test('browser fallback finds both packages when their names are misspelled', () => {
+  const hits = retrieve(index, 'whats the difference between synhpop and tidy synethesis', { limit: 2 });
+  assert.deepEqual(new Set(hits.map(hit => hit.document.id)),
+    new Set(['cran-synthpop-package', 'cran-tidysynthesis-package']));
+});
