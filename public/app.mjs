@@ -1,5 +1,5 @@
 import { FIELDS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel, recommendationEvidenceCodes } from './engine.mjs';
-import { createIndex, retrieve, evidenceFor } from './retrieval.mjs';
+import { createIndex, retrieve, evidenceFor, normalizePetTerms } from './retrieval.mjs';
 import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from './conversation.mjs';
 import { clearHistory, loadHistory, saveHistory } from './history.mjs';
 import { sourceNoteExcerpt } from './evidence-notes.mjs';
@@ -514,7 +514,14 @@ function learningMessage(query, retrievalQuery = query) {
     answer.append(el('p', '', 'I can help with that.'), followupQuestion(intake));
     return answer;
   }
-  let hits = retrieve(state.index, retrievalQuery, { limit: 12 });
+  const normalized = normalizePetTerms(query).toLowerCase();
+  const packageComparison = /\bsynthpop\b/.test(normalized) && /\btidysynthesis\b/.test(normalized)
+    && /\b(?:compare|difference|versus|vs|between)\b/.test(normalized);
+  let hits = packageComparison
+    ? ['cran-synthpop-package', 'cran-tidysynthesis-package']
+      .map(id => state.index.docs.find(document => document.id === id)).filter(Boolean)
+      .map(document => ({ document, score: 1 }))
+    : retrieve(state.index, retrievalQuery, { limit: 12 });
   if (/^\s*(what is|what are|define|explain)\b/i.test(query)) {
     hits = hits.slice().sort((a, b) => {
       const definition = hit => hit.document.id.endsWith('definition') || hit.document.tags.includes('definition') ? 1 : 0;
@@ -523,23 +530,36 @@ function learningMessage(query, retrievalQuery = query) {
     });
   }
   hits = hits.slice(0, 4);
-  state.evidence = hits;
+  state.evidence = [];
   state.pendingQuestion = null;
   const answer = el('div', 'answer');
   if (!hits.length) {
     answer.append(el('p', 'answer-lead', 'I could not find a close match. Try naming a PET or describing what you need to do.'));
     return answer;
   }
+  if (packageComparison && hits.length === 2) {
+    const [synthpop, tidy] = hits;
+    const first = el('p', 'source-answer', 'Both are R packages for synthetic data. synthpop can automate sequential synthesis through syn() and includes tools to assess utility and disclosure risk. ');
+    first.append(safeLink(synthpop.document.url, `${synthpop.document.title} ↗`, 'inline-citation'));
+    const second = el('p', 'source-answer', 'tidysynthesis uses a tidymodels-style workflow with explicit controls for ordering, tuning, constraints, and noise. Neither package makes a dataset safe to release without review. ');
+    second.append(safeLink(tidy.document.url, `${tidy.document.title} ↗`, 'inline-citation'));
+    answer.append(first, second, sourceDetails(hits, null, retrievalQuery));
+    state.evidence = hits;
+    return answer;
+  }
   const count = /\b(compare|difference|versus|vs\.?|between)\b/i.test(query) ? 2 : 1;
   const seen = new Set();
+  const shown = [];
   hits.slice(0, count).forEach(hit => {
     if (seen.has(hit.document.text)) return;
     seen.add(hit.document.text);
+    shown.push(hit);
     const paragraph = el('p', 'source-answer', `${hit.document.text} `);
     paragraph.append(safeLink(hit.document.url, `${hit.document.title} ↗`, 'inline-citation'));
     answer.append(paragraph);
   });
-  answer.append(sourceDetails(hits, null, retrievalQuery));
+  state.evidence = shown;
+  answer.append(sourceDetails(shown, null, retrievalQuery));
   return answer;
 }
 
