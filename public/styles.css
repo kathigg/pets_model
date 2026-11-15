@@ -246,11 +246,10 @@ button:disabled { cursor: default; opacity: .55; }
 .answer-detail-content p { margin: 8px 0; }
 .answer-reasons ul { margin: 8px 0 16px; padding-left: 22px; }
 .answer-reasons li { margin-bottom: 9px; }
-.source-links { display: grid; gap: 9px; margin: 13px 0 0; padding: 0; list-style: none; }
+.source-links { display: grid; gap: 9px; margin: 13px 0 0; }
 .source-evidence { padding: 10px 0; border-top: 1px solid var(--line); }
 .source-evidence:first-child { border-top: 0; }
-.source-match { color: var(--muted); font-size: 14px; }
-.source-excerpt { margin: 8px 0 0; padding-left: 12px; border-left: 2px solid var(--cyan); color: #354b62; font-size: 15px; }
+.source-excerpt { margin: 8px 0 0; color: #354b62; font-size: 15px; }
 .restored-text { margin: 0; white-space: pre-wrap; }
 .citation, .pet-source, .source-title {
   color: var(--blue);

@@ -204,18 +204,17 @@ function sourceDetails(hits, extra, query = '') {
   const details = el('details', 'answer-details');
   details.append(el('summary', '', 'Why this answer'));
   const content = el('div', 'answer-detail-content');
-  content.append(el('p', 'review-note', 'Draft summaries of public sources. Open the original to verify.'));
+  content.append(el('p', 'review-note', 'Public source summaries. Open a source to verify.'));
   if (extra) content.append(extra);
   const unique = hits.filter((hit, i) => hits.findIndex(x => x.document.id === hit.document.id) === i);
   if (unique.length) {
-    const list = el('ul', 'source-links');
+    const list = el('div', 'source-links');
     unique.forEach(({ document: doc }) => {
-      const item = el('li', 'source-evidence');
+      const item = el('div', 'source-evidence');
       item.append(safeLink(doc.url, `${doc.title} ↗`, 'citation'));
       const excerpt = sourceNoteExcerpt(doc.text, query);
       if (excerpt) {
-        item.append(el('p', 'source-match', 'Relevant summary:'));
-        item.append(el('blockquote', 'source-excerpt', excerpt));
+        item.append(el('p', 'source-excerpt', `Relevant summary: ${excerpt}`));
       }
       list.append(item);
     });
