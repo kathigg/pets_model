@@ -50,6 +50,17 @@ test('package comparison retrieves both official package documents and excludes 
   assert.doesNotMatch(prompt, /MDI and D\.C\. ETEP used mock datasets/);
 });
 
+test('misspelled package names still retrieve both official documents', async () => {
+  const model = recordingModel(ids => [{ text: 'synthpop offers automated synthesis and built-in risk checks; tidysynthesis offers more workflow controls.', source_ids: ids }]);
+  const response = await answerWithRag({ message: 'whats the difference between synhpop and tidy synethesis', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.deepEqual(response.sources.map(source => source.id).sort(), ['cran-synthpop-package', 'cran-tidysynthesis-package']);
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /"question":"whats the difference between synthpop and tidysynthesis"/);
+  assert.doesNotMatch(prompt, /mdi-nswers|mdi-dc-report/);
+});
+
 test('linkage-variable advice is prompted for case context, not a universal field or tool', async () => {
   const model = recordingModel(ids => [{ text: 'The fields depend on what each agency can reliably use. Which common identifiers are available?', source_ids: [ids[0]] }]);
   const response = await answerWithRag({ message: "what's the best practice linkage variable in cross agency", intent: 'learn' },

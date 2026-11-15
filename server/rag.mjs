@@ -1,6 +1,6 @@
 import corpus from '../public/data/sources.json' with { type: 'json' };
 import { assessCase, cleanProfile, inferProfile, recommendationEvidenceCodes } from '../public/engine.mjs';
-import { createIndex, retrieve, evidenceFor } from '../public/retrieval.mjs';
+import { createIndex, retrieve, evidenceFor, normalizePetTerms } from '../public/retrieval.mjs';
 import { generateGeminiDraft } from './gemini.mjs';
 import { conversationalReply, openingUseCaseQuestion } from '../public/conversation.mjs';
 import { relatedMdiCase } from '../public/related-cases.mjs';
@@ -60,7 +60,7 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
   }
   const lastUserTopic = context.filter(turn => turn.role === 'user').at(-1)?.text || '';
   const lastAssistant = context.filter(turn => turn.role === 'assistant').at(-1)?.text || '';
-  const query = intent === 'plan' ? message : `${topic || lastUserTopic} ${message}`;
+  const query = normalizePetTerms(intent === 'plan' ? message : `${topic || lastUserTopic} ${message}`);
   if (intent === 'learn' && /\bsynthpop\b/i.test(query) && /\btidysynthesis\b/i.test(query)) {
     return ['cran-synthpop-package', 'cran-tidysynthesis-package']
       .map(id => index.docs.find(document => document.id === id)).filter(Boolean)
@@ -107,7 +107,7 @@ function taskPrompt({ message, intent, profile, context, assessment, hits, topic
     avoid: assessment.avoid.map(item => item.reason)
   };
   const task = {
-    question: message,
+    question: normalizePetTerms(message),
     topic,
     intent,
     recent_context: context,

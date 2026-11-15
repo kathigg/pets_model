@@ -24,8 +24,15 @@ function stem(token) {
   return token;
 }
 
+/** Correct known package-name variants without changing the visitor's displayed message. */
+export function normalizePetTerms(input) {
+  return String(input || '')
+    .replace(/\bsynhpop\b/gi, 'synthpop')
+    .replace(/\btidy[\s-]?(?:synethesis|synthesis)\b/gi, 'tidysynthesis');
+}
+
 export function tokens(input) {
-  const s = String(input || '').toLowerCase()
+  const s = normalizePetTerms(input).toLowerCase()
     .replace(/differential privacy/g, ' differentialprivacy ')
     .replace(/record linkage/g, ' recordlinkage ')
     .replace(/federated learning/g, ' federatedlearning ')
