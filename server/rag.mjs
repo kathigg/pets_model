@@ -66,17 +66,22 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
       .map(id => index.docs.find(document => document.id === id)).filter(Boolean)
       .map(document => ({ document, score: 1, matched: ['synthetic_data'] }));
   }
-  const exampleFollowup = /\b(?:examples?|elaborate|expand)\b/i.test(message) || /\bexamples?\b/i.test(lastUserTopic);
-  if (intent === 'learn' && exampleFollowup && /\b(?:link\w*|cross.agency|pprl|psi|match\w*)\b/i.test(query)) {
-    const named = /\b(?:elaborate|expand)\b/i.test(message) ? [
+  const asksForExamples = /\bexamples?\b/i.test(message);
+  const asksForMore = /^\s*(?:elaborate|expand|tell me more)\b/i.test(message);
+  const asksForResource = /\b(?:resources?|reports?|papers?|guides?|reading|read)\b/i.test(message)
+    && /\b(?:look at|read|recommend|suggest|is there|do you have|which|what|any|some)\b/i.test(message);
+  if (intent === 'learn' && (asksForExamples || asksForMore || asksForResource)
+    && /\b(?:link\w*|cross.agency|pprl|psi|match\w*)\b/i.test(query)) {
+    const named = (asksForMore || asksForResource) ? [
       /\b(?:D\.?C\.?|ETEP)\b/i.test(lastAssistant) && ['mdi-dc-report-triangulation', 'mdi-dc-report-exact-limit'],
       /\b(?:Arkansas|ARData|Linkja)\b/i.test(lastAssistant) && ['mdi-ar-report-linkja-results', 'mdi-ar-report-probabilistic-gap'],
       /\b(?:NYSED|New York)\b/i.test(lastAssistant) && ['mdi-nysed-clean-room-overview'],
       /\bConnecticut\b/i.test(lastAssistant) && ['mdi-ct-linkage-overview']
     ].filter(Boolean).flat() : [];
-    const prefer = named.length ? named : /\b(?:new york|nysed)\b/i.test(query)
+    const prefer = named.length ? named : asksForExamples && /\b(?:new york|nysed)\b/i.test(query)
       ? ['mdi-nysed-clean-room-overview', 'mdi-dc-report-triangulation', 'mdi-ar-report-linkja-results', 'mdi-ct-linkage-overview']
-      : ['mdi-dc-report-triangulation', 'mdi-ar-report-linkja-results', 'mdi-nysed-clean-room-overview', 'mdi-ct-linkage-overview'];
+      : asksForExamples ? ['mdi-dc-report-triangulation', 'mdi-ar-report-linkja-results', 'mdi-nysed-clean-room-overview', 'mdi-ct-linkage-overview']
+      : [];
     const hits = prefer.map(id => index.docs.find(document => document.id === id)).filter(Boolean)
       .map(document => ({ document, score: 1, matched: ['linkage'] }));
     if (hits.length) return hits;
@@ -123,8 +128,8 @@ function taskPrompt({ message, intent, profile, context, assessment, hits, topic
     `Write 1-3 short, plain-language segments. Every segment must cite the exact IDs of the public evidence supporting its claims. Do not invent facts, citations, permission, safety guarantees, or a best PET. If evidence is narrow, state its limits.\n` +
     `For a use case, the interface already shows the proposed approach. Add one short cited segment with a material limitation or next check; do not repeat the approach. If the case facts say the data are public or internal rather than protected, do not discuss FERPA or student-record disclosure unless asked. When separate_mdi_case_card is true, the interface separately shows one short, linked public MDI example; do not repeat that pilot in the main advice unless the visitor asks for more detail. MDI's public PET pages provide project context, not an automatic answer to the visitor's case.\n` +
     `If asked about the best linkage variable across agencies, explain that no single field is best for every case. Start with the matching purpose and what identifiers the parties can lawfully and reliably use; distinguish exact from approximate matching only if useful. Ask one brief question about the available common fields or their quality. Do not mention prior pilots, specific identifiers, hashing, or Bloom filters unless asked.\n` +
-    `If asked for examples or elaboration, give concrete details from the relevant MDI public case studies: who partnered, what was tested, and a documented result or limitation. Do not present a public overview as a full pilot report. If comparing named software packages, compare those packages directly using their own documentation; do not substitute a general synthetic-data overview.\n` +
-    `When the user says "elaborate" or "expand", focus on the example in the most recent assistant reply. Add its specific method and finding or limitation rather than repeating a general overview.\n` +
+    `When explicitly asked for examples, give concrete details from relevant MDI public cases: who partnered, what was tested, and a documented result or limitation. Do not present a public overview as a full pilot report. When asked for a resource, name one or two specific documents from PUBLIC_EVIDENCE and explain briefly why they fit the current topic. The interface renders their titled links. If comparing named software packages, compare those packages directly using their own documentation; do not substitute a general synthetic-data overview.\n` +
+    `When the user says "elaborate" or "expand", expand the substance of the most recent assistant reply. If it was general technical guidance, explain that guidance in more detail; introduce a pilot only if the reply actually discussed one.\n` +
     `Preserve the decision rules' primary, complementary, alternative, missing-fact, and warning distinctions. A PET does not itself grant legal authority. Do not claim hashes or synthetic data are automatically anonymous, or confuse trusted research environments with trusted execution environments. For a case recommendation, do not ask a follow-up question; the interface handles that separately. For a general informational question, at most one targeted question is allowed. If details are missing, qualify the answer rather than pretending they are known.\n` +
     `Do not quote private material or make legal determinations. No markdown tables, headings, source URLs, or uncited claims. Return only the requested JSON.\n` +
     `TASK_JSON:\n${JSON.stringify(task)}`;

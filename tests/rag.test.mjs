@@ -36,6 +36,7 @@ test('package comparison and clarification remain informational turns', () => {
   assert.equal(classifyMessage('they are synthetic data packages', { goal: 'synthetic' }, { hasTopic: true, mode: 'learn' }), 'learn');
   assert.equal(isTopicFollowup('what are good examples'), true);
   assert.equal(isTopicFollowup('elaborate'), true);
+  assert.equal(isTopicFollowup('is there some resource i should look at'), true);
   assert.match(conversationalReply('do u have a privacy reviewer?'), /cannot approve/);
 });
 
@@ -140,6 +141,38 @@ test('elaborate focuses the last named pilot instead of repeating the whole exam
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /mdi-dc-report-triangulation/);
   assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview/);
+});
+
+test('elaborate on general linkage advice stays with linkage quality guidance', async () => {
+  const model = recordingModel(ids => [{ text: 'Compare missingness and false-link rates for the common identifiers.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: 'elaborate', topic: "what's the best practice linkage variable in cross agency", intent: 'learn',
+    context: [
+      { role: 'user', text: "what's the best practice linkage variable in cross agency" },
+      { role: 'assistant', text: 'No single field is best. Assess the quality of shared identifiers and the intended analysis.' }
+    ]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /uk-linkage-quality-assessment/);
+  assert.doesNotMatch(prompt, /mdi-dc-report-triangulation|mdi-ar-report-linkja-results/);
+  assert.match(prompt, /expand the substance of the most recent assistant reply/);
+});
+
+test('resource follow-up after an MDI example retrieves its named public report', async () => {
+  const model = recordingModel(ids => [{ text: 'The D.C. ETEP report gives the exact-match design and its limits.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: 'is there some resource i should look at', topic: 'cross-agency linkage', intent: 'learn',
+    context: [
+      { role: 'user', text: 'what are good examples' },
+      { role: 'assistant', text: 'The D.C. ETEP pilot tested a two-step private set intersection linkage.' }
+    ]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.equal(response.sources[0].id, 'mdi-dc-report-triangulation');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /one or two specific documents/);
+  assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview|mdi-ar-report-linkja-results/);
 });
 
 test('request to secure agency agreement for sharing PII goes to human review without a Gemini call', async () => {

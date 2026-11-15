@@ -23,9 +23,11 @@ export function conversationalReply(text) {
 /** Keep short follow-ups attached to the subject already under discussion. */
 export function isTopicFollowup(text) {
   const message = String(text || '').trim();
+  const resourceRequest = /^(?:is there|do you have|are there)\b.*\bresources?\b|^what (?:report|resource|guide) should i (?:read|look at)\b/i.test(message);
   return message.length <= 160 && (
     /\b(it|its|they|them|their|that|this|those)\b/i.test(message) ||
-    /^\s*(tell me more|and how|and why|elaborate|expand(?: on that)?|what (?:are|would be) (?:some )?(?:good )?examples|(?:is there|do you have) (?:a |some )?resources?)\b/i.test(message)
+    /^(?:tell me more|and how|and why|elaborate|expand(?: on that)?|what (?:are|would be) (?:some )?(?:good )?examples)\b/i.test(message) ||
+    resourceRequest
   );
 }
 
