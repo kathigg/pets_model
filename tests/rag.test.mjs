@@ -105,6 +105,7 @@ test('a nuanced PET explanation can use four cited paragraphs when needed', asyn
   assert.equal(response.status, 'ok');
   assert.equal(response.segments.length, 4);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a comparison, detailed follow-up, or complex use case/);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /For a specialist, explain mechanisms, assumptions, failure modes/);
 });
 
 test('a linkage example follow-up retrieves detailed MDI public cases', async () => {
@@ -279,6 +280,7 @@ test('a PET beginner gets a primer instead of unrelated pilot results', async ()
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /mdi-pets-purpose/);
   assert.match(prompt, /ico-input-output-privacy/);
+  assert.match(prompt, /For a newcomer, define terms and give one concrete example/);
   assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview/);
 });
 

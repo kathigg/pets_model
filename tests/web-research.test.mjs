@@ -61,6 +61,7 @@ test('grounded Vertex call returns only text and links backed by grounding metad
   assert.deepEqual(answer.sources.map(source => source.id), ['web-0', 'web-1']);
   assert.equal(answer.web_suggestion_html.includes('<style>'), true);
   assert.deepEqual(request.body.tools, [{ googleSearch: {} }]);
+  assert.match(request.body.contents[0].parts[0].text, /Match the visitor's level/);
   assert.equal(request.body.generationConfig.responseMimeType, undefined);
   assert.equal(request.headers.authorization, 'Bearer test-access-token');
   assert.deepEqual(usage, { model: 'gemini-3.5-flash', promptTokenCount: 110, candidatesTokenCount: 80, totalTokenCount: 190, webSearchQueries: 1 });
