@@ -107,6 +107,12 @@ function openSavedChat(id) {
       const hits = message.sources.map(source => knownOrWebSource(source))
         .filter(Boolean).map(document => ({ document }));
       if (hits.length) {
+        const links = el('p', 'restored-sources', 'Sources: ');
+        hits.forEach(({ document: doc }, index) => {
+          if (index) links.append(document.createTextNode(' · '));
+          links.append(safeLink(doc.url, `${doc.title} ↗`, 'inline-citation'));
+        });
+        bubble.append(links);
         if (message.searchSuggestionHtml) bubble.append(searchSuggestion(message.searchSuggestionHtml));
         bubble.append(sourceDetails(hits, null, lastQuestion));
       }
