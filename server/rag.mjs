@@ -52,6 +52,12 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
   const lastUserTopic = context.filter(turn => turn.role === 'user').at(-1)?.text || '';
   const lastAssistant = context.filter(turn => turn.role === 'assistant').at(-1)?.text || '';
   const query = normalizePetTerms(intent === 'plan' ? message : `${topic || lastUserTopic} ${message}`);
+  const beginner = intent === 'learn' && /\b(?:new to|beginner|getting started|start learning|what are (?:pets|privacy.enhancing technologies)|pet primer)\b/i.test(message);
+  if (beginner) {
+    return ['mdi-pets-purpose', 'ico-input-output-privacy', 'ico-pets-not-automatic-anonymity']
+      .map(id => index.docs.find(document => document.id === id)).filter(Boolean)
+      .map(document => ({ document, score: 1, matched: ['pets'] }));
+  }
   if (intent === 'learn' && /\bsynthpop\b/i.test(query) && /\btidysynthesis\b/i.test(query)) {
     return ['cran-synthpop-package', 'cran-tidysynthesis-package']
       .map(id => index.docs.find(document => document.id === id)).filter(Boolean)

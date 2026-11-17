@@ -6,16 +6,18 @@ const GENERIC = new Set('best practice difference between latest current recent 
 
 /** Research unfamiliar public PET topics and software comparisons; keep case details out of Search. */
 export function shouldResearchWeb({ message, topic = '', intent, hits = [] }) {
-  const sensitive = /\b(?:confidential|meeting notes|student records|pii|ssn|social security)\b/i.test(message)
+  const sensitive = /\b(?:confidential|meeting notes|ssn|social security)\b/i.test(message)
     || /\b(?:my|our|we|i)\b.{0,80}\b(?:records?|students?|dataset|data|agency|department)\b/i.test(message)
     || /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i.test(message);
   if (intent !== 'learn' || sensitive) return false;
   const question = `${topic} ${message}`;
   const explicit = /\b(?:search (?:the )?(?:web|internet|online)|look (?:it )?up online|browse|find (?:the )?(?:latest|current)|latest|current|recent|up.to.date)\b/i.test(message);
+  const generalLaw = /\b(?:ferpa|gdpr|legislation|regulations?)\b/i.test(message)
+    && /^\s*(?:what|how|explain|describe|summari[sz]e)\b/i.test(message);
   const comparison = /\b(?:difference|compare|versus|vs\.?|between)\b/i.test(message);
   const software = /\b(?:package|software|library|framework|sdk|version|release|github)\b/i.test(question)
     || hits.some(hit => hit.document.tags?.includes('r_package'));
-  if (explicit || (comparison && software)) return true;
+  if (explicit || generalLaw || (comparison && software)) return true;
   const terms = [...new Set(tokens(question))].filter(term => !GENERIC.has(term));
   const covered = new Set(hits.slice(0, 3).flatMap(hit => hit.matched || []));
   const coverage = terms.length ? terms.filter(term => covered.has(term)).length / terms.length : 1;

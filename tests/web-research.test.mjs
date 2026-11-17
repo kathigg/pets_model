@@ -15,6 +15,7 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route('What is the difference between OpenDP and SmartNoise software?'), true);
   assert.equal(route("what's the best practice linkage variable in cross agency"), false);
   assert.equal(route('What is differential privacy?'), false);
+  assert.equal(route('What does FERPA require for disclosure of student records?'), true);
   assert.equal(route('How do I share my student records with another agency?'), false);
   assert.equal(route('Search the web for our confidential meeting notes'), false);
   assert.equal(shouldResearchWeb({ message: 'Compare software for our student records', intent: 'choose', hits: [] }), false);

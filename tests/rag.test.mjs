@@ -257,12 +257,28 @@ test('exploratory agency and synthetic-data questions stay in Q&A mode', async (
 test('general legislation questions receive grounded explanations, not case approval flow', async () => {
   assert.equal(asksLegalPermission('What are FERPA requirements for privacy-preserving record linkage?'), false);
   assert.equal(asksLegalPermission('May we link student records under FERPA?'), true);
-  const model = recordingModel(ids => [{ text: 'FERPA sets conditions for disclosure of education records; a PET alone does not grant sharing authority.', source_ids: [ids[0]] }]);
+  let searched = '';
   const response = await answerWithRag({ message: 'What are FERPA requirements for privacy-preserving record linkage?', intent: 'learn' },
-    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+    { apiKey: 'test-key', webResearch: async question => {
+      searched = question;
+      return { status: 'ok', segments: [{ text: 'FERPA sets conditions for disclosure of education records.', source_ids: ['web-0'] }],
+        sources: [{ id: 'web-0', title: 'Official FERPA guidance', url: 'https://studentprivacy.ed.gov/ferpa', source_role: 'web_grounding' }],
+        web_suggestion_html: '<a href="https://google.com/search?q=FERPA">Search</a>' };
+    } });
   assert.equal(response.status, 'ok');
   assert.equal(response.followup, undefined);
-  assert.match(model.calls[0].body.contents[0].parts[0].text, /"intent":"learn"/);
+  assert.match(searched, /FERPA requirements/);
+});
+
+test('a PET beginner gets a primer instead of unrelated pilot results', async () => {
+  const model = recordingModel(ids => [{ text: 'PETs can protect inputs during processing or reduce disclosure through outputs.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({ message: 'I am new to privacy-enhancing technologies. What are they, and how could an education agency start learning about them?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /mdi-pets-purpose/);
+  assert.match(prompt, /ico-input-output-privacy/);
+  assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview/);
 });
 
 test('intake rejects a model answer that parrots a prior pilot', async () => {
