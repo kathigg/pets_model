@@ -88,6 +88,20 @@ test('linkage-variable advice is prompted for case context, not a universal fiel
   assert.doesNotMatch(prompt, /mdi-ar-report-linkja-results|mdi-dc-report-triangulation/);
 });
 
+test('a nuanced PET explanation can use four cited paragraphs when needed', async () => {
+  const model = recordingModel(ids => [
+    { text: 'First, define the matching purpose.', source_ids: [ids[0]] },
+    { text: 'Then assess missing values in shared fields.', source_ids: [ids[0]] },
+    { text: 'Test false links and missed links.', source_ids: [ids[0]] },
+    { text: 'Review whether the resulting quality meets the intended analysis.', source_ids: [ids[0]] }
+  ]);
+  const response = await answerWithRag({ message: 'Explain linkage-variable quality in detail', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.equal(response.segments.length, 4);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /For a comparison, detailed follow-up, or complex use case/);
+});
+
 test('a linkage example follow-up retrieves detailed MDI public cases', async () => {
   const model = recordingModel(ids => [{ text: 'MDI tested cross-jurisdiction linkage with mock D.C. records.', source_ids: [ids[0]] }]);
   const response = await answerWithRag({
