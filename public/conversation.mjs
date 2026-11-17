@@ -34,11 +34,18 @@ export function isTopicFollowup(text) {
 export function classifyMessage(text, inferred = {}, { hasTopic = false, mode = 'learn' } = {}) {
   const message = String(text || '').trim();
   if (mode === 'learn' && hasTopic && isTopicFollowup(message)) return 'learn';
-  if (/\b(plan|pilot|implement|evaluate|roll.?out|deployment|how would we build)\b/i.test(message)) return 'plan';
-  if (/^\s*(what is|what are|what's the difference|what is the difference|what's (?:the )?best practice|what is (?:the )?best practice|what are (?:the )?best practices|explain|define|how does|how do|when is|when does|tell me about|compare)\b/i.test(message)
-    && !/\b(we need|our (case|data|agency)|for (?:us|our)|which should we|recommend for us)\b/i.test(message)) return 'learn';
-  if (Object.keys(inferred).length || /\b(recommend|choose|best|which pet|what should|our case|we need|use case)\b/i.test(message)) return 'choose';
+  if (/\b(?:help (?:me|us) (?:plan|implement)|plan (?:our|my|this) (?:pilot|project|deployment)|build (?:our|my) (?:pilot|system))\b/i.test(message)) return 'plan';
+  if (wantsRecommendation(message)) return 'choose';
   return 'learn';
+}
+
+/** Enter the case workflow only when the visitor asks us to select an approach. */
+export function wantsRecommendation(text) {
+  const message = String(text || '');
+  return /\b(?:which|what)\s+(?:pet|privacy.enhancing technology|method|approach|technology)\s+should\s+(?:i|we|my|our)\s+use\b/i.test(message)
+    || /\b(?:recommend|suggest|choose|pick|select)\b.{0,70}\b(?:pet|privacy.enhancing technology|method|approach|technology)\b/i.test(message)
+    || /\b(?:best|right)\s+(?:pet|privacy.enhancing technology|method|approach|technology)\s+for\s+(?:me|us|my|our)\b/i.test(message)
+    || /\b(?:we|i)\s+need\s+(?:fuzzy|exact|probabilistic|private|secure)?\s*(?:student\s+)?(?:record|data)\s+(?:linkage|matching|analysis|training)\b/i.test(message);
 }
 
 /** Ask for the case facts that determine a PET choice before retrieving studies. */

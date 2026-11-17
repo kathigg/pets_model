@@ -38,6 +38,10 @@ test('package comparison and clarification remain informational turns', () => {
   assert.equal(isTopicFollowup('elaborate'), true);
   assert.equal(isTopicFollowup('is there some resource i should look at'), true);
   assert.match(conversationalReply('do u have a privacy reviewer?'), /cannot approve/);
+  assert.equal(classifyMessage('I am curious about synthetic data and its limits.', { goal: 'test' }), 'learn');
+  assert.equal(classifyMessage('We want fake data for testing, but are still exploring.', { goal: 'test' }), 'learn');
+  assert.equal(classifyMessage('What MDI resources explain synthetic data?', { goal: 'test' }), 'learn');
+  assert.equal(classifyMessage('What PET should we use for this project?', {}), 'choose');
 });
 
 test('package comparison uses web research instead of a frozen package summary', async () => {
@@ -224,19 +228,30 @@ test('request to secure agency agreement for sharing PII goes to human review wi
   assert.equal(calls, 0);
 });
 
-test('an underspecified data-sharing use case asks for purpose without a pilot citation', async () => {
+test('an explicit recommendation request asks for purpose without a pilot citation', async () => {
   const model = recordingModel(() => [{ text: 'I can help with the sharing plan.', source_ids: [] }]);
-  for (const message of [
-    'I have a set of data I want to share with the DC department of education. What PET should I use?',
-    "Hello! I'm working with the New York Department of Education and I'd like to share some information securely. Could you help?"
-  ]) {
-    const response = await answerWithRag({ message, intent: 'learn' }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
-    assert.equal(response.status, 'chat', message);
-    assert.deepEqual(response.sources, []);
-    assert.equal(response.followup.field, 'goal');
-    assert.equal(response.followup.text, 'What are you trying to do?');
-    assert.doesNotMatch(response.segments[0].text, /\?/);
-  }
+  const message = 'I have a set of data I want to share with the DC department of education. What PET should I use?';
+  const response = await answerWithRag({ message, intent: 'learn' }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'chat');
+  assert.deepEqual(response.sources, []);
+  assert.equal(response.followup.field, 'goal');
+  assert.equal(response.followup.text, 'What are you trying to do?');
+  assert.doesNotMatch(response.segments[0].text, /\?/);
+});
+
+test('exploratory agency and synthetic-data questions stay in Q&A mode', async () => {
+  const model = recordingModel(ids => [{ text: 'Secure sharing depends on what moves and who can access it. MDI describes several PET pilots.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({
+    message: "Hello! I'm working with the New York Department of Education and I'd like to share some information securely. Could you help?",
+    intent: 'learn', profile: { goal: 'test', sensitivity: 'protected' }
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.equal(response.followup, undefined);
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /"intent":"learn"/);
+  assert.match(prompt, /"decision_rules":null/);
+  assert.match(prompt, /"case_facts":\{\}/);
+  assert.match(prompt, /answer without a follow-up question/);
 });
 
 test('intake rejects a model answer that parrots a prior pilot', async () => {

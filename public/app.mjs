@@ -336,7 +336,7 @@ async function requestModel(intent, query, topic = '') {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ message: query, intent, topic, profile: cleanProfile(state.profile), context }),
+      body: JSON.stringify({ message: query, intent, topic, profile: intent === 'learn' ? {} : cleanProfile(state.profile), context }),
       cache: 'no-store',
       signal: controller.signal
     });
@@ -546,14 +546,6 @@ function learningMessage(query, retrievalQuery = query) {
     state.evidence = [];
     return el('div', 'answer', socialReply);
   }
-  const intake = openingUseCaseQuestion(query, state.profile, state.transcript.slice(0, -1));
-  if (intake) {
-    state.evidence = [];
-    state.pendingQuestion = intake;
-    const answer = el('div', 'answer');
-    answer.append(el('p', '', 'I can help with that.'), followupQuestion(intake));
-    return answer;
-  }
   const normalized = normalizePetTerms(query).toLowerCase();
   const packageComparison = /\bsynthpop\b/.test(normalized) && /\btidysynthesis\b/.test(normalized)
     && /\b(?:compare|difference|versus|vs|between)\b/.test(normalized);
@@ -682,6 +674,7 @@ function send(text) {
   if (newCase) reset();
   const pendingAnswer = newCase ? null : answerToCaseQuestion(state.pendingQuestion, query);
   const intent = pendingAnswer ? 'choose' : isLegalQuestion(query) ? 'legal' : classifyMessage(query, inferred, { hasTopic: followup, mode: state.mode });
+  if (intent === 'learn') state.pendingQuestion = null;
   if (intent === 'choose' || intent === 'plan') {
     state.profile = { ...state.profile, ...inferred };
     if (pendingAnswer) state.profile[state.pendingQuestion.field] = pendingAnswer;
