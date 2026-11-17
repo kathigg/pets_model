@@ -67,6 +67,16 @@ test('misspelled package names are normalized before web research', async () => 
   assert.equal(researched, 'whats the difference between synthpop and tidysynthesis');
 });
 
+test('daily web limit prevents an additional grounded search call', async () => {
+  let calls = 0;
+  const response = await answerWithRag({ message: 'Compare synthpop and tidysynthesis', intent: 'learn' }, {
+    apiKey: 'test-key', reserveModelCall: async () => true, reserveWebResearch: async () => false,
+    webResearch: async () => { calls++; throw new Error('unexpected'); }
+  });
+  assert.equal(response.reason, 'web_daily_limit');
+  assert.equal(calls, 0);
+});
+
 test('linkage-variable advice is prompted for case context, not a universal field or tool', async () => {
   const model = recordingModel(ids => [{ text: 'The fields depend on what each agency can reliably use. Which common identifiers are available?', source_ids: [ids[0]] }]);
   const response = await answerWithRag({ message: "what's the best practice linkage variable in cross agency", intent: 'learn' },

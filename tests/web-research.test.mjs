@@ -16,6 +16,7 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route("what's the best practice linkage variable in cross agency"), false);
   assert.equal(route('What is differential privacy?'), false);
   assert.equal(route('How do I share my student records with another agency?'), false);
+  assert.equal(route('Search the web for our confidential meeting notes'), false);
   assert.equal(shouldResearchWeb({ message: 'Compare software for our student records', intent: 'choose', hits: [] }), false);
 });
 
@@ -67,6 +68,21 @@ test('search without grounded citations fails closed', async () => {
   const answer = await generateWebGroundedAnswer('Compare packages', {
     apiKey: 'test-key',
     fetchImpl: async () => Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'An unsupported claim.' }] } }] })
+  });
+  assert.equal(answer, null);
+});
+
+test('grounding support must quote actual generated answer text', async () => {
+  const answer = await generateWebGroundedAnswer('Compare packages', {
+    apiKey: 'test-key',
+    fetchImpl: async () => Response.json({ candidates: [{ finishReason: 'STOP',
+      content: { parts: [{ text: 'A different answer.' }] },
+      groundingMetadata: {
+        searchEntryPoint: { renderedContent: '<a href="https://google.com/search">Search</a>' },
+        groundingChunks: [{ web: { uri: 'https://cran.r-project.org/package=synthpop', title: 'synthpop' } }],
+        groundingSupports: [{ segment: { text: 'A fabricated supported sentence.' }, groundingChunkIndices: [0] }]
+      }
+    }] })
   });
   assert.equal(answer, null);
 });

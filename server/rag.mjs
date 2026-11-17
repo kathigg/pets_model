@@ -168,7 +168,7 @@ function validateConversation(draft) {
 }
 
 /** Public-source RAG with deterministic privacy gates and validated citations. */
-export async function answerWithRag(input, { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, reserveModelCall, onUsage, webResearch = generateWebGroundedAnswer } = {}) {
+export async function answerWithRag(input, { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, reserveModelCall, reserveWebResearch, onUsage, webResearch = generateWebGroundedAnswer } = {}) {
   const message = typeof input?.message === 'string' ? input.message.trim().slice(0, MAX_MESSAGE) : '';
   const topic = typeof input?.topic === 'string' ? input.topic.trim().slice(0, MAX_MESSAGE) : '';
   let intent = ['learn', 'choose', 'plan'].includes(input?.intent) ? input.intent : 'learn';
@@ -207,6 +207,9 @@ export async function answerWithRag(input, { apiKey, accessTokenProvider, model,
     }
     const webRoutingHits = retrieve(index, `${topic} ${message}`, { limit: 6 });
     if (!conversational && shouldResearchWeb({ message, topic, intent, hits: webRoutingHits })) {
+      if (reserveWebResearch && !(await reserveWebResearch())) {
+        return result('unavailable', 'Web research has reached its daily limit.', 'web_daily_limit');
+      }
       const grounded = await webResearch(normalizePetTerms(topic ? `${topic}. ${message}` : message),
         { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage });
       return grounded || result('unavailable', 'I could not verify a web answer.', 'web_grounding_missing');

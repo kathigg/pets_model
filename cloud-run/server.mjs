@@ -148,6 +148,7 @@ export function createCloudRunServer({
   chatHandler = handleChatRequest,
   accessTokenProvider = createMetadataAccessTokenProvider(),
   reserveModelCall = createDailyModelBudget(),
+  reserveWebResearch = createDailyModelBudget({ limit: 75 }),
   projectId = process.env.VERTEX_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT,
   location = process.env.VERTEX_LOCATION || 'global',
   model = process.env.GEMINI_MODEL || 'gemini-3.5-flash'
@@ -187,6 +188,7 @@ export function createCloudRunServer({
           requireIdentity: false,
           rateKey: 'public-cloud-run',
           reserveModelCall,
+          reserveWebResearch,
           onUsage: usage => console.info(JSON.stringify({ event: 'gemini_usage', ...usage }))
         });
         await sendWebResponse(response, webResponse);
