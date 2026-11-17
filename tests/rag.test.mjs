@@ -40,25 +40,31 @@ test('package comparison and clarification remain informational turns', () => {
   assert.match(conversationalReply('do u have a privacy reviewer?'), /cannot approve/);
 });
 
-test('package comparison retrieves both official package documents and excludes unrelated pilots', async () => {
-  const model = recordingModel(ids => [{ text: 'Both are R packages for synthetic data, with different workflow controls.', source_ids: ids }]);
+test('package comparison uses web research instead of a frozen package summary', async () => {
+  let researched;
   const response = await answerWithRag({ message: "what's the difference between synthpop and tidysynthesis", intent: 'learn' },
-    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+    { apiKey: 'test-key', webResearch: async question => {
+      researched = question;
+      return { status: 'ok', segments: [{ text: 'A grounded comparison.', source_ids: ['web-0'] }],
+        sources: [{ id: 'web-0', title: 'Official package docs', url: 'https://cran.r-project.org/package=synthpop', source_role: 'web_grounding' }],
+        web_suggestion_html: '<a href="https://google.com/search?q=synthpop">Search</a>' };
+    } });
   assert.equal(response.status, 'ok');
-  assert.deepEqual(response.sources.map(source => source.id).sort(), ['cran-synthpop-package', 'cran-tidysynthesis-package']);
-  const prompt = model.calls[0].body.contents[0].parts[0].text;
-  assert.doesNotMatch(prompt, /MDI and D\.C\. ETEP used mock datasets/);
+  assert.equal(researched, "what's the difference between synthpop and tidysynthesis");
+  assert.deepEqual(response.segments[0].source_ids, ['web-0']);
 });
 
-test('misspelled package names still retrieve both official documents', async () => {
-  const model = recordingModel(ids => [{ text: 'synthpop offers automated synthesis and built-in risk checks; tidysynthesis offers more workflow controls.', source_ids: ids }]);
+test('misspelled package names are normalized before web research', async () => {
+  let researched;
   const response = await answerWithRag({ message: 'whats the difference between synhpop and tidy synethesis', intent: 'learn' },
-    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+    { apiKey: 'test-key', webResearch: async question => {
+      researched = question;
+      return { status: 'ok', segments: [{ text: 'A grounded comparison.', source_ids: ['web-0'] }],
+        sources: [{ id: 'web-0', title: 'Official package docs', url: 'https://cran.r-project.org/package=synthpop', source_role: 'web_grounding' }],
+        web_suggestion_html: '<a href="https://google.com/search?q=synthpop">Search</a>' };
+    } });
   assert.equal(response.status, 'ok');
-  assert.deepEqual(response.sources.map(source => source.id).sort(), ['cran-synthpop-package', 'cran-tidysynthesis-package']);
-  const prompt = model.calls[0].body.contents[0].parts[0].text;
-  assert.match(prompt, /"question":"whats the difference between synthpop and tidysynthesis"/);
-  assert.doesNotMatch(prompt, /mdi-nswers|mdi-dc-report/);
+  assert.equal(researched, 'whats the difference between synthpop and tidysynthesis');
 });
 
 test('linkage-variable advice is prompted for case context, not a universal field or tool', async () => {
@@ -110,7 +116,7 @@ test('synthetic-data advice leaves the MDI example to a separate linked card', a
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /"separate_mdi_case_card":true/);
   assert.doesNotMatch(prompt, /ed-ferpa-deidentification-standard/);
-  assert.match(prompt, /Add one short cited segment with a material limitation or next check/);
+  assert.match(prompt, /Add one or two cited paragraphs with a material limitation, tradeoff, or next check/);
   assert.match(prompt, /interface separately shows one short, linked public MDI example/);
   assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
 });

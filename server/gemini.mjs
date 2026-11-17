@@ -8,7 +8,7 @@ function responseSchema(sourceIds) {
     description: grounded ? 'A concise PET answer grounded in the supplied public sources.' : 'A concise conversational answer.',
     properties: {
       segments: {
-        type: 'ARRAY', minItems: 1, maxItems: 3,
+        type: 'ARRAY', minItems: 1, maxItems: 4,
         items: {
           type: 'OBJECT',
           properties: {
@@ -45,7 +45,7 @@ export async function generateGeminiDraft(prompt, sourceIds, {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
       thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: 'LOW' },
-      maxOutputTokens: 2048,
+      maxOutputTokens: 3072,
       responseMimeType: 'application/json',
       responseSchema: responseSchema(sourceIds)
     }
