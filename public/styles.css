@@ -250,6 +250,7 @@ button:disabled { cursor: default; opacity: .55; }
 .source-evidence { padding: 10px 0; border-top: 1px solid var(--line); }
 .source-evidence:first-child { border-top: 0; }
 .source-excerpt { margin: 8px 0 0; color: #354b62; font-size: 15px; }
+.search-suggestion { display: block; width: 100%; height: 82px; margin: 8px 0; border: 0; }
 .restored-text { margin: 0; white-space: pre-wrap; }
 .citation, .pet-source, .source-title {
   color: var(--blue);

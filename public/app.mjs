@@ -4,6 +4,7 @@ import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFoll
 import { clearHistory, loadHistory, saveHistory } from './history.mjs';
 import { sourceNoteExcerpt } from './evidence-notes.mjs';
 import { relatedMdiCase } from './related-cases.mjs';
+import { validWebSource } from './web-sources.mjs';
 
 const $ = selector => document.querySelector(selector);
 const el = (tag, className = '', text) => {
@@ -17,6 +18,7 @@ const state = {
   mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '', pendingQuestion: null,
   busy: false, turn: 0, controller: null, apiUnavailable: false, aiNoticeShown: false
 };
+state.webSuggestionHtml = '';
 const messages = $('#messages');
 const mascot = $('#mascot');
 let browserStorage;
@@ -92,6 +94,7 @@ function openSavedChat(id) {
     ? { field: chat.pendingField, text: FIELDS[chat.pendingField].label }
     : null;
   state.evidence = [];
+  state.webSuggestionHtml = '';
   messages.replaceChildren();
   let lastQuestion = '';
   let lastAssistantBubble = null;
@@ -101,9 +104,12 @@ function openSavedChat(id) {
     bubble.append(el('p', 'restored-text', message.text));
     if (message.role === 'user') lastQuestion = message.text;
     if (message.role === 'assistant' && message.sources?.length) {
-      const hits = message.sources.map(source => state.index.docs.find(doc => doc.id === source.id))
+      const hits = message.sources.map(source => knownOrWebSource(source))
         .filter(Boolean).map(document => ({ document }));
-      if (hits.length) bubble.append(sourceDetails(hits, null, lastQuestion));
+      if (hits.length) {
+        if (message.searchSuggestionHtml) bubble.append(searchSuggestion(message.searchSuggestionHtml));
+        bubble.append(sourceDetails(hits, null, lastQuestion));
+      }
     }
     if (message.role === 'assistant') lastAssistantBubble = bubble;
     row.append(bubble);
@@ -144,6 +150,21 @@ function safeLink(url, label, className = '') {
   return link;
 }
 
+function knownOrWebSource(source) {
+  const known = state.index.docs.find(doc => doc.id === source?.id);
+  if (known) return source.url === known.url ? known : null;
+  return validWebSource(source) ? { ...source, text: '' } : null;
+}
+
+function searchSuggestion(html) {
+  const frame = el('iframe', 'search-suggestion');
+  frame.title = 'Google Search suggestions';
+  frame.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation');
+  frame.referrerPolicy = 'no-referrer';
+  frame.srcdoc = html;
+  return frame;
+}
+
 function collapseEarlierRecommendations() {
   messages.querySelectorAll('.answer.is-recommendation:not(.is-collapsed)').forEach(answer => {
     const details = el('details', 'prior-answer');
@@ -181,8 +202,13 @@ function addMessage(kind, content) {
   state.transcript.push({
     role: kind,
     text: messageText(bubble),
-    sources: kind === 'assistant' ? state.evidence.map(hit => ({ id: hit.document.id, title: hit.document.title, url: hit.document.url })) : []
+    sources: kind === 'assistant' ? state.evidence.map(hit => ({
+      id: hit.document.id, title: hit.document.title, url: hit.document.url,
+      source_role: hit.document.source_role, publisher: hit.document.publisher
+    })) : [],
+    searchSuggestionHtml: kind === 'assistant' ? state.webSuggestionHtml : ''
   });
+  state.webSuggestionHtml = '';
   saveCurrentChat();
   row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
@@ -204,7 +230,9 @@ function sourceDetails(hits, extra, query = '') {
   const details = el('details', 'answer-details');
   details.append(el('summary', '', 'Why this answer'));
   const content = el('div', 'answer-detail-content');
-  content.append(el('p', 'review-note', 'Public source summaries. Open a source to verify.'));
+  content.append(el('p', 'review-note', hits.some(hit => hit.document.source_role === 'web_grounding')
+    ? 'Web sources returned by Google Search. Open a source to verify.'
+    : 'Public source summaries. Open a source to verify.'));
   if (extra) content.append(extra);
   const unique = hits.filter((hit, i) => hits.findIndex(x => x.document.id === hit.document.id) === i);
   if (unique.length) {
@@ -239,10 +267,14 @@ function checkedModelAnswer(payload) {
   const publicDocs = new Map(state.index.docs.map(doc => [doc.id, doc]));
   const supplied = new Map();
   for (const source of payload.sources) {
-    const doc = publicDocs.get(source?.id);
+    const doc = publicDocs.get(source?.id) || knownOrWebSource(source);
     if (!doc || source.url !== doc.url || supplied.has(doc.id)) return null;
     supplied.set(doc.id, doc);
   }
+  const webSources = [...supplied.values()].some(doc => doc.source_role === 'web_grounding');
+  const suggestion = payload.web_suggestion_html;
+  if (webSources && (typeof suggestion !== 'string' || !suggestion.trim() || suggestion.length > 60000)) return null;
+  if (!webSources && suggestion !== undefined) return null;
   const segments = [];
   const cited = new Map();
   for (const segment of payload.segments) {
@@ -257,7 +289,7 @@ function checkedModelAnswer(payload) {
     }
     segments.push({ text, docs });
   }
-  return { segments, hits: [...cited.values()].map(document => ({ document, score: 1 })) };
+  return { segments, hits: [...cited.values()].map(document => ({ document, score: 1 })), webSuggestionHtml: webSources ? suggestion : '' };
 }
 
 function citedParagraphs(model) {
@@ -275,10 +307,12 @@ function citedParagraphs(model) {
 
 function modelMessage(model, title = '', query = '') {
   state.evidence = model.hits;
+  state.webSuggestionHtml = model.webSuggestionHtml || '';
   state.pendingQuestion = model.followup || null;
   const answer = el('div', 'answer');
   if (title) answer.append(el('h2', 'answer-title', title));
   answer.append(citedParagraphs(model));
+  if (model.webSuggestionHtml) answer.append(searchSuggestion(model.webSuggestionHtml));
   if (model.followup) answer.append(followupQuestion(model.followup));
   if (model.hits.length) answer.append(sourceDetails(model.hits, null, query));
   return answer;

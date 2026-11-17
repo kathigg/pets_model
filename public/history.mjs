@@ -21,7 +21,9 @@ export function loadHistory(storage) {
             role: message.role,
             text: message.text.slice(0, 8000),
             sources: Array.isArray(message.sources) ? message.sources.slice(0, 8).filter(source =>
-              source && typeof source.id === 'string' && typeof source.url === 'string') : []
+              source && typeof source.id === 'string' && typeof source.url === 'string') : [],
+            searchSuggestionHtml: typeof message.searchSuggestionHtml === 'string' && message.searchSuggestionHtml.length <= 60000
+              ? message.searchSuggestionHtml : ''
           }))
       }));
     return { activeId: typeof data.activeId === 'string' ? data.activeId : null, chats };
