@@ -1,0 +1,58 @@
+[
+  {
+    "id": "beginner",
+    "persona": "New education-agency officer, no PET background",
+    "message": "I am new to privacy-enhancing technologies. What are they, and how could an education agency start learning about them?",
+    "intent": "learn",
+    "expect": "Direct primer and useful public reading, without a case questionnaire"
+  },
+  {
+    "id": "nebraska",
+    "persona": "Analyst exploring fake data for early testing",
+    "message": "We want fake education data so analysts can test a dashboard. What are the benefits and limits of synthetic data, and has MDI worked on this?",
+    "intent": "learn",
+    "expect": "Useful synthetic-data explanation, Nebraska NSWERS example, no premature method choice"
+  },
+  {
+    "id": "arkansas",
+    "persona": "Technical officer comparing linkage methods",
+    "message": "Our record linkage has spelling errors and missing identifiers. How does Arkansas Linkja differ from probabilistic matching?",
+    "intent": "learn",
+    "expect": "Arkansas limitations, exact token matching versus probabilistic linkage, no universal recommendation"
+  },
+  {
+    "id": "dc",
+    "persona": "Experienced cross-agency linkage engineer",
+    "message": "Why did the DC ETEP pilot use two PSI joins, and what would limit that design when identifiers are messy?",
+    "intent": "learn",
+    "expect": "Accurate two-join bridge and exact-matching limitation from the public report"
+  },
+  {
+    "id": "new_york",
+    "persona": "Policy officer surveying multi-agency clean rooms",
+    "message": "What did the public NYSED clean-room pilot actually establish about multi-agency linkage, and what remains unknown?",
+    "intent": "learn",
+    "expect": "Public overview only; no confidential notes or invented numerical result"
+  },
+  {
+    "id": "legislation",
+    "persona": "PET specialist asking a general legal question",
+    "message": "What are the main FERPA issues to understand when designing privacy-preserving record linkage across education agencies? Please explain the framework generally.",
+    "intent": "learn",
+    "expect": "Substantive sourced explanation, while declining to certify a particular project"
+  },
+  {
+    "id": "software",
+    "persona": "R analyst comparing synthetic-data tools",
+    "message": "What is the difference between synthpop and tidysynthesis for creating synthetic data?",
+    "intent": "learn",
+    "expect": "Current web-grounded package comparison with official documentation links"
+  },
+  {
+    "id": "case_choice",
+    "persona": "Officer explicitly asking for a PET recommendation",
+    "message": "We have education and workforce records at three agencies. What PET should we use to link them?",
+    "intent": "choose",
+    "expect": "One useful clarifying question before any confident PET selection"
+  }
+]
