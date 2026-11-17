@@ -42,6 +42,7 @@ test('package comparison and clarification remain informational turns', () => {
   assert.equal(classifyMessage('We want fake data for testing, but are still exploring.', { goal: 'test' }), 'learn');
   assert.equal(classifyMessage('What MDI resources explain synthetic data?', { goal: 'test' }), 'learn');
   assert.equal(classifyMessage('What PET should we use for this project?', {}), 'choose');
+  assert.equal(classifyMessage('What PET should we use for it?', {}, { hasTopic: true, mode: 'learn' }), 'choose');
 });
 
 test('package comparison uses web research instead of a frozen package summary', async () => {

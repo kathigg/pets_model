@@ -33,9 +33,9 @@ export function isTopicFollowup(text) {
 
 export function classifyMessage(text, inferred = {}, { hasTopic = false, mode = 'learn' } = {}) {
   const message = String(text || '').trim();
+  if (wantsRecommendation(message)) return 'choose';
   if (mode === 'learn' && hasTopic && isTopicFollowup(message)) return 'learn';
   if (/\b(?:help (?:me|us) (?:plan|implement)|plan (?:our|my|this) (?:pilot|project|deployment)|build (?:our|my) (?:pilot|system))\b/i.test(message)) return 'plan';
-  if (wantsRecommendation(message)) return 'choose';
   return 'learn';
 }
 
