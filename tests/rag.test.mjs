@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { answerWithRag } from '../server/rag.mjs';
-import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from '../public/conversation.mjs';
+import { answerToCaseQuestion, asksLegalPermission, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from '../public/conversation.mjs';
 import { assessCase, inferProfile } from '../public/engine.mjs';
 import { relatedMdiCase } from '../public/related-cases.mjs';
 
@@ -252,6 +252,17 @@ test('exploratory agency and synthetic-data questions stay in Q&A mode', async (
   assert.match(prompt, /"decision_rules":null/);
   assert.match(prompt, /"case_facts":\{\}/);
   assert.match(prompt, /answer without a follow-up question/);
+});
+
+test('general legislation questions receive grounded explanations, not case approval flow', async () => {
+  assert.equal(asksLegalPermission('What are FERPA requirements for privacy-preserving record linkage?'), false);
+  assert.equal(asksLegalPermission('May we link student records under FERPA?'), true);
+  const model = recordingModel(ids => [{ text: 'FERPA sets conditions for disclosure of education records; a PET alone does not grant sharing authority.', source_ids: [ids[0]] }]);
+  const response = await answerWithRag({ message: 'What are FERPA requirements for privacy-preserving record linkage?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.equal(response.followup, undefined);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /"intent":"learn"/);
 });
 
 test('intake rejects a model answer that parrots a prior pilot', async () => {

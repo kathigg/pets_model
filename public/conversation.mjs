@@ -48,6 +48,16 @@ export function wantsRecommendation(text) {
     || /\b(?:we|i)\s+need\s+(?:fuzzy|exact|probabilistic|private|secure)?\s*(?:student\s+)?(?:record|data)\s+(?:linkage|matching|analysis|training)\b/i.test(message);
 }
 
+/** A request for permission on the visitor's own proposed data action needs human review. */
+export function asksLegalPermission(text) {
+  return String(text || '').split(/[.!?]/).some(clause =>
+    /\b(?:i|we|my|our|us|this project|these records)\b/i.test(clause)
+      && /\b(?:ferpa|gdpr|legal|legally|lawful|law|regulation|regulatory|compliance|compliant|comply|consent|permission|authorization|authority)\b/i.test(clause)
+      && /\b(?:can|could|may|must|should|allow|allows|allowed|permit|permits|permitted|legal|lawful|compliant)\b/i.test(clause)
+      && /\b(?:use|shar\w*|releas\w*|publish\w*|disclos\w*|access\w*|collect\w*|process\w*|transfer\w*|link\w*|join\w*|match\w*|train\w*|analy[sz]\w*)\b/i.test(clause)
+  );
+}
+
 /** Ask for the case facts that determine a PET choice before retrieving studies. */
 export function openingUseCaseQuestion(text, profile = {}, context = []) {
   const message = String(text || '');

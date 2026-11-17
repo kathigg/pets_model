@@ -1,6 +1,6 @@
 import { FIELDS, assessCase, cleanProfile, inferProfile, nextQuestion, profileLabel, recommendationEvidenceCodes } from './engine.mjs';
 import { createIndex, retrieve, evidenceFor, normalizePetTerms } from './retrieval.mjs';
-import { answerToCaseQuestion, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from './conversation.mjs';
+import { answerToCaseQuestion, asksLegalPermission, classifyMessage, conversationalReply, isTopicFollowup, openingUseCaseQuestion } from './conversation.mjs';
 import { clearHistory, loadHistory, saveHistory } from './history.mjs';
 import { sourceNoteExcerpt } from './evidence-notes.mjs';
 import { relatedMdiCase } from './related-cases.mjs';
@@ -628,9 +628,7 @@ function isLegalQuestion(text) {
   if (/\b(?:pii|personally identifiable|student records?)\b/i.test(text)
     && /\b(?:agree|approval|permission|persuad\w*|convinc\w*|sign off)\b/i.test(text)
     && /\b(?:shar\w*|transferr?\w*|send)\b/i.test(text)) return true;
-  const clause = text.trim().split(/[.!?]/).map(x => x.trim()).filter(Boolean).at(-1) || text;
-  const terms = /\b(ferpa|gdpr|compliance|compliant|legal|legally|law|lawful|regulation|regulatory|permitted|allowed|consent|authorization|authority|data.sharing agreement)\b/i;
-  return terms.test(clause) && (/\b(under|according to)\b/i.test(clause) || /^\s*(can|may|must|should|do|does|is|are|what|how|which|whether|ferpa|gdpr|legal|compliance)\b/i.test(clause));
+  return asksLegalPermission(text);
 }
 
 function legalMessage(query) {

@@ -5,14 +5,14 @@ function responseSchema(sourceIds) {
   const grounded = sourceIds.length > 0;
   return {
     type: 'OBJECT',
-    description: grounded ? 'A concise PET answer grounded in the supplied public sources.' : 'A concise conversational answer.',
+    description: grounded ? 'A PET answer grounded in the supplied public sources, with enough detail for the question.' : 'A conversational answer with enough detail for the question.',
     properties: {
       segments: {
         type: 'ARRAY', minItems: 1, maxItems: 4,
         items: {
           type: 'OBJECT',
           properties: {
-            text: { type: 'STRING', description: 'One short, plain-language answer segment.' },
+            text: { type: 'STRING', description: 'One plain-language answer segment; explain complex points fully.' },
             source_ids: {
               type: 'ARRAY', minItems: grounded ? 1 : 0, maxItems: grounded ? 3 : 0,
               description: 'IDs of the supplied public sources supporting this segment.',

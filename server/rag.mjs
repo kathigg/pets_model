@@ -2,7 +2,7 @@ import corpus from '../public/data/sources.json' with { type: 'json' };
 import { assessCase, cleanProfile, inferProfile, recommendationEvidenceCodes } from '../public/engine.mjs';
 import { createIndex, retrieve, evidenceFor, normalizePetTerms } from '../public/retrieval.mjs';
 import { generateGeminiDraft } from './gemini.mjs';
-import { conversationalReply, openingUseCaseQuestion, wantsRecommendation } from '../public/conversation.mjs';
+import { asksLegalPermission, conversationalReply, openingUseCaseQuestion, wantsRecommendation } from '../public/conversation.mjs';
 import { relatedMdiCase } from '../public/related-cases.mjs';
 import { generateWebGroundedAnswer, shouldResearchWeb } from './web-research.mjs';
 
@@ -24,15 +24,6 @@ function sourceMetadata(document) {
 
 function result(status, text, reason = undefined) {
   return { status, segments: text ? [{ text, source_ids: [] }] : [], sources: [], ...(reason ? { reason } : {}) };
-}
-
-function asksLegalPermission(message) {
-  return message.split(/[.!?]/).some(clause =>
-    /\b(ferpa|gdpr|legal|legally|lawful|law|regulation|regulatory|compliance|compliant|comply|consent|permission|authorization|authority)\b/i.test(clause)
-      && (/\b(can|could|may|must|should|allow|allows|allowed|permit|permits|permitted|comply|compliant)\b/i.test(clause)
-        || /\b(?:is|are)\s+(?:(?:it|this|that|our|the)\s+)?(?:legal|lawful|compliant)\b/i.test(clause))
-      && /\b(?:use|shar\w*|releas\w*|publish\w*|disclos\w*|access\w*|collect\w*|process\w*|transfer\w*|link\w*|join\w*|match\w*|train\w*|analy[sz]\w*)\b/i.test(clause)
-  );
 }
 
 function asksSensitiveSharingApproval(message) {
