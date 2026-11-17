@@ -11,6 +11,7 @@ const route = message => shouldResearchWeb({ message, intent: 'learn', hits: ret
 test('web research handles software comparisons and unfamiliar PET terms, not routine case intake', () => {
   assert.equal(route('whats the difference between synhpop and tidy synethesis'), true);
   assert.equal(route('Compare synthpop and tidysynthesis'), true);
+  assert.equal(route('What is synthpop?'), true);
   assert.equal(route('What is the latest synthpop release?'), true);
   assert.equal(route('What is the difference between OpenDP and SmartNoise software?'), true);
   assert.equal(route("what's the best practice linkage variable in cross agency"), false);

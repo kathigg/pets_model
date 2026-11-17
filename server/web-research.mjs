@@ -15,9 +15,10 @@ export function shouldResearchWeb({ message, topic = '', intent, hits = [] }) {
   const generalLaw = /\b(?:ferpa|gdpr|legislation|regulations?)\b/i.test(message)
     && /^\s*(?:what|how|explain|describe|summari[sz]e)\b/i.test(message);
   const comparison = /\b(?:difference|compare|versus|vs\.?|between)\b/i.test(message);
+  const namedSoftware = /\b(?:synthpop|tidysynthesis|opendp|smartnoise)\b/i.test(question);
   const software = /\b(?:package|software|library|framework|sdk|version|release|github)\b/i.test(question)
     || hits.some(hit => hit.document.tags?.includes('r_package'));
-  if (explicit || generalLaw || (comparison && software)) return true;
+  if (explicit || generalLaw || namedSoftware || (comparison && software)) return true;
   const terms = [...new Set(tokens(question))].filter(term => !GENERIC.has(term));
   const covered = new Set(hits.slice(0, 3).flatMap(hit => hit.matched || []));
   const coverage = terms.length ? terms.filter(term => covered.has(term)).length / terms.length : 1;
