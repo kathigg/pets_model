@@ -6,6 +6,7 @@ import { sourceNoteExcerpt } from './evidence-notes.mjs';
 import { relatedMdiCase } from './related-cases.mjs';
 import { validWebSource } from './web-sources.mjs';
 import { originalSourceLabel, sourceCitationLabel } from './citations.mjs';
+import { answerParagraphs, appendInlineFormatting } from './inline-format.mjs';
 
 const $ = selector => document.querySelector(selector);
 const el = (tag, className = '', text) => {
@@ -102,12 +103,27 @@ function openSavedChat(id) {
   for (const message of state.transcript) {
     const row = el('div', `message-row ${message.role} restored`);
     const bubble = el('div', 'bubble');
-    bubble.append(el('p', 'restored-text', message.text));
+    const hits = message.role === 'assistant' ? (message.sources || []).map(source => knownOrWebSource(source))
+      .filter(Boolean).map(document => ({ document })) : [];
+    const known = new Map(hits.map(hit => [hit.document.id, hit.document]));
+    const savedSegments = message.role === 'assistant' && Array.isArray(message.answerSegments)
+      ? message.answerSegments.map(segment => ({ text: segment.text,
+        docs: segment.source_ids.map(id => known.get(id)).filter(Boolean) })) : [];
+    const restoredAnswer = message.role === 'assistant' ? el('div', 'answer') : null;
+    if (savedSegments.length) {
+      if (message.answerTitle) restoredAnswer.append(el('h2', 'answer-title', message.answerTitle));
+      restoredAnswer.append(citedParagraphs({ segments: savedSegments }));
+    }
+    else if (message.role === 'assistant') {
+      for (const text of answerParagraphs(message.text)) {
+        const paragraph = el('p', 'restored-text');
+        appendInlineFormatting(paragraph, text);
+        restoredAnswer.append(paragraph);
+      }
+    } else bubble.append(el('p', 'restored-text', message.text));
     if (message.role === 'user') lastQuestion = message.text;
-    if (message.role === 'assistant' && message.sources?.length) {
-      const hits = message.sources.map(source => knownOrWebSource(source))
-        .filter(Boolean).map(document => ({ document }));
-      if (hits.length) {
+    if (message.role === 'assistant' && hits.length) {
+      if (!savedSegments.length) {
         const links = el('p', 'restored-sources', 'Sources: ');
         const linked = new Set();
         hits.forEach(({ document: doc }) => {
@@ -116,11 +132,12 @@ function openSavedChat(id) {
           links.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
           linked.add(doc.url);
         });
-        bubble.append(links);
-        if (message.searchSuggestionHtml) bubble.append(searchSuggestion(message.searchSuggestionHtml));
-        bubble.append(sourceDetails(hits, null, lastQuestion));
+        restoredAnswer.append(links);
       }
+      if (message.searchSuggestionHtml) restoredAnswer.append(searchSuggestion(message.searchSuggestionHtml));
+      restoredAnswer.append(sourceDetails(hits, null, lastQuestion));
     }
+    if (restoredAnswer) bubble.append(restoredAnswer);
     if (message.role === 'assistant') lastAssistantBubble = bubble;
     row.append(bubble);
     messages.append(row);
@@ -189,7 +206,8 @@ function collapseEarlierRecommendations() {
 function messageText(bubble) {
   const copy = bubble.cloneNode(true);
   copy.querySelectorAll('details, .inline-citation, .ai-note, .choice-list').forEach(node => node.remove());
-  return (copy.textContent || '').replace(/\s+/g, ' ').trim();
+  copy.querySelectorAll('p, li, h2').forEach(node => node.after(document.createTextNode('\n\n')));
+  return (copy.textContent || '').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n\n').trim();
 }
 
 function addMessage(kind, content) {
@@ -212,6 +230,10 @@ function addMessage(kind, content) {
   state.transcript.push({
     role: kind,
     text: messageText(bubble),
+    ...(kind === 'assistant' && Array.isArray(content?.savedSegments)
+      ? { answerSegments: content.savedSegments.slice(0, 8).map(segment => ({
+        text: String(segment.text).slice(0, 2200), source_ids: segment.source_ids.slice(0, 3)
+      })), answerTitle: String(content.savedTitle || '').slice(0, 120) } : {}),
     sources: kind === 'assistant' ? state.evidence.map(hit => ({
       id: hit.document.id, title: hit.document.title, url: hit.document.url,
       source_role: hit.document.source_role, publisher: hit.document.publisher
@@ -315,15 +337,19 @@ function checkedModelAnswer(payload) {
 function citedParagraphs(model) {
   const content = el('div', 'model-explanation');
   model.segments.forEach(segment => {
-    const paragraph = el('p', 'source-answer', `${segment.text} `);
-    const linked = new Set();
-    segment.docs.forEach((doc, i) => {
-      if (linked.has(doc.url)) return;
-      if (i && linked.size) paragraph.append(document.createTextNode(' '));
-      paragraph.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
-      linked.add(doc.url);
-    });
-    content.append(paragraph);
+    for (const text of answerParagraphs(segment.text)) {
+      const paragraph = el('p', 'source-answer');
+      appendInlineFormatting(paragraph, text);
+      paragraph.append(document.createTextNode(' '));
+      const linked = new Set();
+      segment.docs.forEach((doc, i) => {
+        if (linked.has(doc.url)) return;
+        if (i && linked.size) paragraph.append(document.createTextNode(' '));
+        paragraph.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
+        linked.add(doc.url);
+      });
+      content.append(paragraph);
+    }
   });
   return content;
 }
@@ -333,6 +359,10 @@ function modelMessage(model, title = '', query = '') {
   state.webSuggestionHtml = model.webSuggestionHtml || '';
   state.pendingQuestion = model.followup || null;
   const answer = el('div', 'answer');
+  answer.savedSegments = model.segments.map(segment => ({
+    text: segment.text, source_ids: segment.docs.map(doc => doc.id)
+  }));
+  answer.savedTitle = title;
   if (title) answer.append(el('h2', 'answer-title', title));
   answer.append(citedParagraphs(model));
   if (model.webSuggestionHtml) answer.append(searchSuggestion(model.webSuggestionHtml));

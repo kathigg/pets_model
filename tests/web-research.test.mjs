@@ -108,6 +108,28 @@ test('longer grounded answers retain consecutive supported points', async () => 
   assert.deepEqual(answer.segments[0].source_ids, ['web-0']);
 });
 
+test('grounded answer retains punctuation and paragraph breaks around cited spans', async () => {
+  const answer = await generateWebGroundedAnswer('Explain synthetic data', {
+    apiKey: 'test-key',
+    fetchImpl: async () => Response.json({ candidates: [{ finishReason: 'STOP',
+      content: { parts: [{ text: '**Synthetic data** is generated from real data.\n\nIt helps testing, but privacy is not automatic.' }] },
+      groundingMetadata: {
+        searchEntryPoint: { renderedContent: '<a href="https://google.com/search">Search</a>' },
+        groundingChunks: [{ web: { uri: 'https://www.nist.gov/', title: 'NIST' } }],
+        groundingSupports: [
+          { segment: { startIndex: 0, text: '**Synthetic data** is generated from real data' }, groundingChunkIndices: [0] },
+          { segment: { startIndex: 51, text: 'It helps testing, but privacy is not automatic' }, groundingChunkIndices: [0] }
+        ]
+      }
+    }] })
+  });
+  assert.deepEqual(answer.segments.map(segment => segment.text), [
+    '**Synthetic data** is generated from real data.',
+    'It helps testing, but privacy is not automatic.'
+  ]);
+  assert.deepEqual(answer.segments.map(segment => segment.source_ids), [['web-0'], ['web-0']]);
+});
+
 test('grounding support must quote actual generated answer text', async () => {
   const answer = await generateWebGroundedAnswer('Compare packages', {
     apiKey: 'test-key',

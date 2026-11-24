@@ -20,6 +20,11 @@ export function loadHistory(storage) {
           .map(message => ({
             role: message.role,
             text: message.text.slice(0, 8000),
+            answerSegments: Array.isArray(message.answerSegments) ? message.answerSegments.slice(0, 8)
+              .filter(segment => segment && typeof segment.text === 'string' && Array.isArray(segment.source_ids))
+              .map(segment => ({ text: segment.text.slice(0, 2200),
+                source_ids: segment.source_ids.slice(0, 3).filter(id => typeof id === 'string' && id.length <= 100) })) : [],
+            answerTitle: typeof message.answerTitle === 'string' ? message.answerTitle.slice(0, 120) : '',
             sources: Array.isArray(message.sources) ? message.sources.slice(0, 8).filter(source =>
               source && typeof source.id === 'string' && typeof source.url === 'string') : [],
             searchSuggestionHtml: typeof message.searchSuggestionHtml === 'string' && message.searchSuggestionHtml.length <= 60000
