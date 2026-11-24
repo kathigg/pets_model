@@ -2,17 +2,20 @@
 
 ## Cloud Shell when the local CLI login fails
 
-From the Google Cloud Console for `mdi-yimingwu-pets`, open Cloud Shell and authorize it. Cloud Shell already includes `gcloud`, so no API key or local CLI login is needed. Run:
+From the Google Cloud Console for `mdi-yimingwu-pets`, open Cloud Shell and authorize it. Cloud Shell already includes `gcloud`, so no API key or local CLI login is needed. For a future code deployment, run these commands **once** from the Cloud Shell home directory:
 
 ```bash
-git clone https://github.com/kathigg/pets_model.git && cd pets_model && bash scripts/deploy-cloud-run.sh
+cd ~
+if [ -d pets_model/.git ]; then git -C pets_model pull --ff-only; else git clone https://github.com/kathigg/pets_model.git pets_model; fi
+cd pets_model
+bash scripts/deploy-cloud-run.sh
 ```
 
 The script deploys the checked-out GitHub commit to the existing private `pets-model` service, keeps the dedicated runtime identity, zero minimum instances, one maximum instance, one concurrent request, and no unauthenticated access. It does not change the IAP visitor policy. Source deployment starts one Cloud Build job and can incur charges. After it finishes, check the printed ready revision and test a public web question such as “What is the difference between synthpop and tidysynthesis?” The server uses Vertex AI Google Search grounding and returns only metadata-supported text and web links. Cloud Shell may ask you to authorize its Google Cloud access when it first starts.
 
-**Last verified deployment (November 14, 2026):** The private [`pets-model` service](https://pets-model-850678646784.us-east1.run.app) was ready in `mdi-yimingwu-pets` (`us-east1`), revision `pets-model-00022-dbm`, serving 100% of traffic. It uses `gemini-3.5-flash` through `pets-model-runtime@mdi-yimingwu-pets.iam.gserviceaccount.com`. Direct IAP remained enabled and its service agent was the sole Cloud Run Invoker. A live synthetic-data case showed a concise, linked Nebraska NSWERS example and relevant public technical guidance after the visitor selected “Already public.” Earlier live checks covered the feedback prompts and saved answer choices. The newer web-grounding code has **not been verified on Cloud Run**; 91 automated tests and 19 retrieval evaluations pass locally as of November 24. Minimum instances are zero; maximum instances and concurrency are one. No confidential NYSED meeting notes or private retrieval integration are in the service.
+**Deployment status (November 24, 2026):** Cloud Shell deployed the private [`pets-model` service](https://pets-model-850678646784.us-east1.run.app) twice from the same GitHub code, first as `pets-model-00023-xhw`, then as `pets-model-00024-vgv`. Revision `00024-vgv` serves 100% of traffic in `mdi-yimingwu-pets` (`us-east1`). The service uses `gemini-3.5-flash` through `pets-model-runtime@mdi-yimingwu-pets.iam.gserviceaccount.com`. A signed-in user confirmed that the synthpop web-search question worked, but its exact answer and citations have not been independently reviewed. An unauthenticated request to the main URL still redirects to IAP sign-in. The local suite passes 91 automated tests and 19 retrieval evaluations. Minimum instances are zero; maximum instances and concurrency are one. No confidential NYSED meeting notes or private retrieval integration are in the service.
 
-The deployment CLI warned that it could not change the service IAM policy. A read after deployment confirmed the policy still grants `roles/run.invoker` only to the IAP service agent, with no `allUsers` grant. The account still cannot inspect the separate IAP visitor policy. The existing `BILLING_APP_LABEL=kathleen-chatbot` environment variable was preserved.
+The November 24 deployment CLI warned that it could not change the service IAM policy. At the earlier deployment, a policy read confirmed `roles/run.invoker` only for the IAP service agent, with no `allUsers` grant. The latest policy was not re-read, but the main URL still redirects unauthenticated visitors to IAP sign-in. This account cannot inspect the separate IAP visitor policy. The existing `BILLING_APP_LABEL=kathleen-chatbot` environment variable was preserved at the earlier deployment; its value was not re-read after the latest one.
 
 Cloud Run serves the page and same-origin `/api/chat` endpoint. The server calls project-scoped Vertex AI using its [Cloud Run service identity](https://docs.cloud.google.com/run/docs/securing/service-identity), which has a custom role containing only `aiplatform.endpoints.predict`. This route does not use a Gemini API key; the previously mentioned GitHub Environment secret is not part of it. The runtime environment contains `VERTEX_PROJECT_ID=mdi-yimingwu-pets`, `VERTEX_LOCATION=global`, and `GEMINI_MODEL=gemini-3.5-flash`. Confidential NYSED notes remain local and are not used by the hosted app.
 
