@@ -25,7 +25,7 @@ export function loadHistory(storage) {
               .map(segment => ({ text: segment.text.slice(0, 2200),
                 source_ids: segment.source_ids.slice(0, 3).filter(id => typeof id === 'string' && id.length <= 100) })) : [],
             answerTitle: typeof message.answerTitle === 'string' ? message.answerTitle.slice(0, 120) : '',
-            sources: Array.isArray(message.sources) ? message.sources.slice(0, 8).filter(source =>
+            sources: Array.isArray(message.sources) ? message.sources.slice(0, 24).filter(source =>
               source && typeof source.id === 'string' && typeof source.url === 'string') : [],
             searchSuggestionHtml: typeof message.searchSuggestionHtml === 'string' && message.searchSuggestionHtml.length <= 60000
               ? message.searchSuggestionHtml : ''

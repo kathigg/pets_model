@@ -77,8 +77,8 @@ test('grounded Vertex call returns only text and links backed by grounding metad
   assert.match(request.body.contents[0].parts[0].text, /Prior assistant answer, for follow-up context only and not as evidence/);
   assert.equal(request.body.generationConfig.responseMimeType, undefined);
   assert.equal(request.headers.authorization, 'Bearer test-access-token');
-  assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');
-  assert.equal(request.body.generationConfig.maxOutputTokens, 6144);
+  assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+  assert.equal(request.body.generationConfig.maxOutputTokens, 4096);
   assert.deepEqual(usage, { model: 'gemini-3.8-flash', promptTokenCount: 110, candidatesTokenCount: 80, totalTokenCount: 190, webSearchQueries: 1 });
 });
 

@@ -106,9 +106,11 @@ function openSavedChat(id) {
     const hits = message.role === 'assistant' ? (message.sources || []).map(source => knownOrWebSource(source))
       .filter(Boolean).map(document => ({ document })) : [];
     const known = new Map(hits.map(hit => [hit.document.id, hit.document]));
-    const savedSegments = message.role === 'assistant' && Array.isArray(message.answerSegments)
+    const loadedSegments = message.role === 'assistant' && Array.isArray(message.answerSegments)
       ? message.answerSegments.map(segment => ({ text: segment.text,
         docs: segment.source_ids.map(id => known.get(id)).filter(Boolean) })) : [];
+    const savedSegments = loadedSegments.length && loadedSegments.every((segment, index) =>
+      segment.docs.length === message.answerSegments[index].source_ids.length) ? loadedSegments : [];
     const restoredAnswer = message.role === 'assistant' ? el('div', 'answer') : null;
     if (savedSegments.length) {
       if (message.answerTitle) restoredAnswer.append(el('h2', 'answer-title', message.answerTitle));

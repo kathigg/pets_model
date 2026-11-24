@@ -125,7 +125,7 @@ export async function generateWebGroundedAnswer(question, {
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         tools: [{ googleSearch: {} }],
-        generationConfig: { thinkingConfig: { thinkingLevel: 'MEDIUM' }, maxOutputTokens: 6144 }
+        generationConfig: { thinkingConfig: { thinkingLevel: 'LOW' }, maxOutputTokens: 4096 }
       })
     });
     if (!response.ok) throw new Error('Grounded model request failed');

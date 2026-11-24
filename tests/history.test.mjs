@@ -37,6 +37,23 @@ test('corrupt or blocked browser storage leaves chat usable', () => {
   assert.equal(saveHistory(broken, { activeId: 'one', chats: [] }), false);
 });
 
+test('reload retains every cited web source in a multi-paragraph answer', () => {
+  const storage = memoryStorage();
+  const sources = Array.from({ length: 12 }, (_, index) => ({
+    id: `web-${index}`, url: `https://example.org/source-${index}`, source_role: 'web_grounding'
+  }));
+  const answerSegments = sources.map((source, index) => ({
+    text: `Paragraph ${index + 1}.`, source_ids: [source.id]
+  }));
+  saveHistory(storage, { activeId: 'web', chats: [{
+    id: 'web', title: 'Sources', messages: [{ role: 'assistant', text: 'Answer.', sources,
+      answerSegments: answerSegments.slice(0, 8) }]
+  }] });
+  const restored = loadHistory(storage).chats[0].messages[0];
+  assert.equal(restored.sources.length, 12);
+  assert.deepEqual(restored.answerSegments, answerSegments.slice(0, 8));
+});
+
 test('evidence excerpt quotes the matching draft note sentence exactly', () => {
   const note = 'Private set intersection compares sets. Differential privacy limits information about individuals in aggregate releases.';
   const excerpt = sourceNoteExcerpt(note, 'How does differential privacy help?');

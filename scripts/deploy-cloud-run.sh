@@ -21,7 +21,7 @@ gcloud run deploy "$service" \
   --service-account "$runtime_account" \
   --min-instances 0 \
   --max-instances 1 \
-  --concurrency 1 \
+  --concurrency 4 \
   --update-env-vars GEMINI_MODEL=gemini-3.8-flash \
   --no-allow-unauthenticated \
   --quiet
