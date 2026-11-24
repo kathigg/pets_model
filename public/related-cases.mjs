@@ -4,7 +4,7 @@ const CASES = Object.freeze({
   synthetic: {
     sourceId: 'mdi-nswers-report-utility',
     name: 'Nebraska NSWERS',
-    summary: 'NSWERS tested synthetic education and workforce data; its public report emphasizes preserving relationships needed for the intended analysis.'
+    summary: 'NSWERS and the Urban Institute began with separate synthetic datasets for high-school graduation and time to employment. Early single-variable checks looked promising; the report says preserving outcome-predictor relationships mattered more.'
   },
   exactLinkage: {
     sourceId: 'mdi-dc-report-triangulation',

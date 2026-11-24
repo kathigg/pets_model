@@ -108,9 +108,12 @@ function openSavedChat(id) {
         .filter(Boolean).map(document => ({ document }));
       if (hits.length) {
         const links = el('p', 'restored-sources', 'Sources: ');
-        hits.forEach(({ document: doc }, index) => {
-          if (index) links.append(document.createTextNode(' · '));
+        const linked = new Set();
+        hits.forEach(({ document: doc }) => {
+          if (linked.has(doc.url)) return;
+          if (linked.size) links.append(document.createTextNode(' · '));
           links.append(safeLink(doc.url, `${doc.title} ↗`, 'inline-citation'));
+          linked.add(doc.url);
         });
         bubble.append(links);
         if (message.searchSuggestionHtml) bubble.append(searchSuggestion(message.searchSuggestionHtml));
@@ -240,18 +243,26 @@ function sourceDetails(hits, extra, query = '') {
     ? 'Web sources returned by Google Search. Open a source to verify.'
     : 'Public source summaries. Open a source to verify.'));
   if (extra) content.append(extra);
-  const unique = hits.filter((hit, i) => hits.findIndex(x => x.document.id === hit.document.id) === i);
-  if (unique.length) {
+  const groups = new Map();
+  for (const { document: doc } of hits) {
+    if (!groups.has(doc.url)) groups.set(doc.url, []);
+    if (!groups.get(doc.url).some(other => other.id === doc.id)) groups.get(doc.url).push(doc);
+  }
+  if (groups.size) {
     const list = el('div', 'source-links');
-    unique.forEach(({ document: doc }) => {
+    for (const [url, docs] of groups) {
       const item = el('div', 'source-evidence');
-      item.append(safeLink(doc.url, `${doc.title} ↗`, 'citation'));
-      const excerpt = sourceNoteExcerpt(doc.text, query);
-      if (excerpt) {
-        item.append(el('p', 'source-excerpt', `Relevant summary: ${excerpt}`));
+      const sameTitle = docs.every(doc => doc.title === docs[0].title);
+      const label = sameTitle ? docs[0].title : url === 'https://mdi.georgetown.edu/pets/use-cases/'
+        ? 'MDI PETs use cases' : `${docs[0].publisher} source page`;
+      item.append(safeLink(url, `${label} ↗`, 'citation'));
+      for (const doc of docs) {
+        const excerpt = sourceNoteExcerpt(doc.text, query);
+        const section = doc.section || (!sameTitle && docs.length > 1 ? doc.title : '');
+        if (excerpt) item.append(el('p', 'source-excerpt', `Our summary${section ? ` (${section})` : ''}: ${excerpt}`));
       }
       list.append(item);
-    });
+    }
     content.append(list);
   } else content.append(el('p', '', 'No close public source matched this question.'));
   details.append(content);
@@ -302,9 +313,12 @@ function citedParagraphs(model) {
   const content = el('div', 'model-explanation');
   model.segments.forEach(segment => {
     const paragraph = el('p', 'source-answer', `${segment.text} `);
+    const linked = new Set();
     segment.docs.forEach((doc, i) => {
-      if (i) paragraph.append(document.createTextNode(' '));
+      if (linked.has(doc.url)) return;
+      if (i && linked.size) paragraph.append(document.createTextNode(' '));
       paragraph.append(safeLink(doc.url, `${doc.title} ↗`, 'inline-citation'));
+      linked.add(doc.url);
     });
     content.append(paragraph);
   });
@@ -329,8 +343,8 @@ async function requestModel(intent, query, topic = '') {
   const controller = new AbortController();
   state.controller = controller;
   const timeout = setTimeout(() => controller.abort(), 115000);
-  const context = state.transcript.slice(0, -1).slice(-4).map(entry => ({
-    role: entry.role, text: entry.text.slice(0, 500)
+  const context = state.transcript.slice(0, -1).slice(-8).map(entry => ({
+    role: entry.role, text: entry.text.slice(0, 400)
   }));
   try {
     const response = await fetch('/api/chat', {

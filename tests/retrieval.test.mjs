@@ -97,3 +97,15 @@ test('PET vocabulary tolerates close typos without rewriting unrelated words', (
   assert.equal(normalizePetTerms('linkadge variables in private records'),
     'linkage variables in private records');
 });
+
+test('NIST synthetic-data notes identify the original page and distinct supported sections', () => {
+  const caution = corpus.find(doc => doc.id === 'nist-dp-synthetic-caution');
+  const utility = corpus.find(doc => doc.id === 'nist-dp-synthetic-utility');
+  assert.equal(caution.title, 'Differentially Private Synthetic Data');
+  assert.equal(utility.title, caution.title);
+  assert.equal(utility.url, caution.url);
+  assert.match(caution.section, /Opening discussion/);
+  assert.match(utility.section, /Use Cases & Utility/);
+  assert.match(caution.text, /many synthetic-data methods do not satisfy differential privacy/);
+  assert.match(utility.text, /purpose-built differentially private analysis/);
+});

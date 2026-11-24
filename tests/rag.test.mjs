@@ -87,6 +87,24 @@ test('a misspelled synthetic-data definition uses public web grounding', async (
   assert.deepEqual(response.segments[0].source_ids, ['web-0']);
 });
 
+test('public web follow-up receives the previous answer as context', async () => {
+  let researched;
+  let previousAnswer;
+  const response = await answerWithRag({ message: 'elaborate', topic: 'Compare synthpop and tidysynthesis', intent: 'learn',
+    context: [{ role: 'user', text: 'Compare synthpop and tidysynthesis' },
+      { role: 'assistant', text: 'synthpop and tidysynthesis offer different R workflows.' }] },
+  { apiKey: 'test-key', webResearch: async (question, options) => {
+    researched = question;
+    previousAnswer = options.previousAnswer;
+    return { status: 'ok', segments: [{ text: 'A more detailed sourced comparison.', source_ids: ['web-0'] }],
+      sources: [{ id: 'web-0', title: 'Package documentation', url: 'https://cran.r-project.org/package=synthpop', source_role: 'web_grounding' }],
+      web_suggestion_html: '<a href="https://google.com/search">Search</a>' };
+  } });
+  assert.equal(response.status, 'ok');
+  assert.match(researched, /Compare synthpop and tidysynthesis\. elaborate/);
+  assert.match(previousAnswer, /different R workflows/);
+});
+
 test('local source-gap answer retries once with grounded web evidence', async () => {
   let modelCalls = 0;
   let webCalls = 0;
@@ -166,6 +184,35 @@ test('a nuanced PET explanation can use four cited paragraphs when needed', asyn
   assert.equal(response.segments.length, 4);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a substantive PET question, give a complete explanation/);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a specialist, explain mechanisms, assumptions, failure modes/);
+});
+
+test('Nebraska answer receives concrete public report passages', async () => {
+  const model = recordingModel(ids => [
+    { text: 'NSWERS and the Urban Institute began with separate graduation and time-to-employment synthetic datasets.', source_ids: [ids[0]] },
+    { text: 'The report describes linked-table preparation and missing-value challenges.', source_ids: [ids[1]] }
+  ]);
+  const response = await answerWithRag({ message: 'What did Nebraska NSWERS specifically do with synthetic data?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.equal(response.segments.length, 2);
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  assert.match(prompt, /mdi-nswers-report-utility/);
+  assert.match(prompt, /mdi-nswers-report-longitudinal/);
+  assert.match(prompt, /Distinguish planned evaluation from completed results/);
+});
+
+test('recent chat context includes four exchanges without stale turns', async () => {
+  const model = recordingModel(ids => [{ text: 'A privacy budget accounts for repeated releases.', source_ids: [ids[0]] }]);
+  const context = Array.from({ length: 10 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', text: `turn-${i} ${'x'.repeat(450)}` }));
+  const response = await answerWithRag({ message: 'How does a differential privacy budget work?', intent: 'learn', context },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  const prompt = model.calls[0].body.contents[0].parts[0].text;
+  const task = JSON.parse(prompt.split('TASK_JSON:\n')[1]);
+  assert.equal(task.recent_context.length, 8);
+  assert.match(task.recent_context[0].text, /^turn-2/);
+  assert.match(task.recent_context.at(-1).text, /^turn-9/);
+  assert.ok(task.recent_context.every(turn => turn.text.length <= 400));
 });
 
 test('a linkage example follow-up retrieves detailed MDI public cases', async () => {

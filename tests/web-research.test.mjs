@@ -24,6 +24,8 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route('Search the web for our confidential meeting notes'), false);
   assert.equal(shouldResearchWeb({ message: 'Compare software for our student records', intent: 'choose', hits: [] }), false);
   assert.equal(canResearchWeb({ message: 'What is differential privacy?', topic: 'Our confidential student file', intent: 'learn' }), false);
+  assert.equal(canResearchWeb({ message: 'elaborate', topic: 'synthetic data', intent: 'learn',
+    context: [{ role: 'user', text: 'Our confidential dataset needs a synthesis tool.' }] }), false);
 });
 
 test('web source URLs reject local hosts and non-HTTPS links', () => {
@@ -39,6 +41,7 @@ test('grounded Vertex call returns only text and links backed by grounding metad
   let usage;
   const answer = await generateWebGroundedAnswer('Compare synthpop and tidysynthesis', {
     projectId: 'pets-model-123', accessTokenProvider: async () => 'test-access-token',
+    previousAnswer: 'The first answer covered the basic distinction.',
     onUsage: value => { usage = value; },
     fetchImpl: async (url, options) => {
       request = { url, headers: options.headers, body: JSON.parse(options.body) };
@@ -66,6 +69,7 @@ test('grounded Vertex call returns only text and links backed by grounding metad
   assert.equal(answer.web_suggestion_html.includes('<style>'), true);
   assert.deepEqual(request.body.tools, [{ googleSearch: {} }]);
   assert.match(request.body.contents[0].parts[0].text, /Match the visitor's level/);
+  assert.match(request.body.contents[0].parts[0].text, /Prior assistant answer, for follow-up context only and not as evidence/);
   assert.equal(request.body.generationConfig.responseMimeType, undefined);
   assert.equal(request.headers.authorization, 'Bearer test-access-token');
   assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');

@@ -13,8 +13,8 @@ const MAX_ANSWER = 6500;
 
 function compactContext(context) {
   if (!Array.isArray(context)) return [];
-  return context.slice(-4).filter(turn => turn && (turn.role === 'user' || turn.role === 'assistant') && typeof turn.text === 'string')
-    .map(turn => ({ role: turn.role, text: turn.text.trim().slice(0, 350) })).filter(turn => turn.text);
+  return context.slice(-8).filter(turn => turn && (turn.role === 'user' || turn.role === 'assistant') && typeof turn.text === 'string')
+    .map(turn => ({ role: turn.role, text: turn.text.trim().slice(0, 400) })).filter(turn => turn.text);
 }
 
 function sourceMetadata(document) {
@@ -62,6 +62,15 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
     return ['cran-synthpop-package', 'cran-tidysynthesis-package']
       .map(id => index.docs.find(document => document.id === id)).filter(Boolean)
       .map(document => ({ document, score: 1, matched: ['synthetic_data'] }));
+  }
+  if (intent === 'learn' && (/\bnswers\b/i.test(query) ||
+      (/\bnebraska\b/i.test(query) && /\b(?:synthetic|fake|pilot|report|data|mdi)\b/i.test(query)) ||
+      (/\b(?:mdi|georgetown)\b/i.test(query) && /\b(?:synthetic|fake)\b/i.test(query)))) {
+    return ['mdi-nswers-report-utility', 'mdi-nswers-report-longitudinal',
+      'mdi-nebraska-use-case', 'mdi-synthetic-pilot-planning',
+      'ico-synthetic-risks', 'nist-dp-synthetic-caution']
+      .map(id => index.docs.find(document => document.id === id)).filter(Boolean)
+      .map(document => ({ document, score: 1, matched: ['synthetic'] }));
   }
   const asksForExamples = /\bexamples?\b/i.test(message);
   const asksForMore = /^\s*(?:elaborate|expand|tell me more)\b/i.test(message);
@@ -129,6 +138,7 @@ function taskPrompt({ message, intent, profile, context, assessment, hits, topic
     `Match the visitor's level and stage. For a newcomer, define terms before technical detail. For a specialist, explain mechanisms, assumptions, failure modes, and evidence limits. For a policy question, explain the general framework from the cited guidance without giving a project-specific legal approval. Do not use the same checklist or decision-tree template for every answer. When a public MDI pilot directly illustrates an applied question, answer the question first, then optionally add one or two brief, clearly labeled "Similar MDI use case" paragraphs with the tested setting, documented result or limitation, and its citation. A third example is useful only when it shows a materially different approach or limitation. Skip pilot examples for simple definitions or weak matches. Never let a pilot replace the answer or become a universal prescription.\n` +
     `For an informational question (intent learn), answer it directly. Explain the concept, practical distinction, or evidence the visitor asked about; do not turn it into a PET selection exercise or ask for their dataset. If asked about MDI resources, describe only what the public source documents support. These source summaries are drafts with no recorded expert approval, so never call them expert-reviewed. For a use case recommendation (intent choose), the interface already shows the proposed approach. Add two or three cited paragraphs with material limitations, tradeoffs, or next checks when useful; a complex case can need four. Do not repeat the approach. If the case facts say the data are public or internal rather than protected, do not discuss FERPA or student-record disclosure unless asked. When separate_mdi_case_card is true, the interface separately shows one short, linked public MDI example; do not repeat that pilot in the main advice unless the visitor asks for more detail. MDI's public PET pages provide project context, not an automatic answer to the visitor's case.\n` +
     `If asked about linkage variables across agencies, explain that no single field is best for every case. Start with the matching purpose and assess identifier completeness, error rates, and distinctiveness; distinguish exact from approximate matching when useful. If the supplied evidence supports it, Arkansas and D.C. can illustrate different tested field combinations and their limits after the general explanation. The public NYSED clean-room overview establishes a multi-agency pilot but names no matching variables or measured outcome, so do not invent either.\n` +
+    `When Nebraska NSWERS is relevant and its report passages are supplied, go beyond naming the pilot: explain that NSWERS and the Urban Institute began with separate synthetic datasets for high-school graduation and time to employment; early checks of individual variables looked promising, while preserving relationships between outcomes and predictors was a more important evaluation target. Mention linked-table preparation or missing/high-cardinality values only if relevant and cited. Distinguish planned evaluation from completed results. Do not imply the report proves all synthetic releases are safe.\n` +
     `When explicitly asked for examples, give two or three compact MDI public cases when evidence supports them. For each, say who partnered, what was tested, and a documented result or limitation. Do not present a public overview as a full pilot report or invent results it does not report. When asked for a resource, name one or two specific documents from PUBLIC_EVIDENCE and explain briefly why they fit the current topic. The interface renders their titled links. If comparing named software packages, compare those packages directly using their own documentation; do not substitute a general synthetic-data overview.\n` +
     `When the user says "elaborate" or "expand", expand the substance of the most recent assistant reply. A directly relevant public pilot may illustrate the explanation even if it was not mentioned earlier; avoid abruptly switching to unrelated project history.\n` +
     `For a case recommendation, preserve the decision rules' primary, complementary, alternative, missing-fact, and warning distinctions. A PET does not itself grant legal authority. Do not claim hashes or synthetic data are automatically anonymous, or confuse trusted research environments with trusted execution environments. For a case recommendation, do not ask a follow-up question; the interface handles that separately. For a general informational question, answer without a follow-up question unless the visitor explicitly asks you to tailor the answer. If details are missing, qualify the answer rather than pretending they are known.\n` +
@@ -212,12 +222,14 @@ export async function answerWithRag(input, { apiKey, accessTokenProvider, model,
       return result('unavailable', 'The model has reached its daily limit.', 'daily_limit');
     }
     const webRoutingHits = retrieve(index, `${topic} ${message}`, { limit: 6 });
-    if (!conversational && shouldResearchWeb({ message, topic, intent, hits: webRoutingHits })) {
+    const webContext = topic ? context : [];
+    const previousAnswer = topic ? context.filter(turn => turn.role === 'assistant').at(-1)?.text || '' : '';
+    if (!conversational && shouldResearchWeb({ message, topic, intent, context: webContext, hits: webRoutingHits })) {
       if (reserveWebResearch && !(await reserveWebResearch())) {
         return result('unavailable', 'Web research has reached its daily limit.', 'web_daily_limit');
       }
       const grounded = await webResearch(normalizePetTerms(topic ? `${topic}. ${message}` : message),
-        { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage });
+        { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage, previousAnswer });
       return grounded || result('unavailable', 'I could not verify a web answer.', 'web_grounding_missing');
     }
     const conversation = !hits.length;
@@ -240,12 +252,12 @@ export async function answerWithRag(input, { apiKey, accessTokenProvider, model,
         (!checked || !/PETs Model/i.test(checked.segments.map(segment => segment.text).join(' ')))) {
       return result('chat', socialReply);
     }
-    if (intent === 'learn' && !conversational && checked && canResearchWeb({ message, topic, intent }) &&
+    if (intent === 'learn' && !conversational && checked && canResearchWeb({ message, topic, intent, context: webContext }) &&
         saysSourcesCannotAnswer(checked)) {
       if (reserveModelCall && !(await reserveModelCall())) return result('unavailable', 'The model has reached its daily limit.', 'daily_limit');
       if (reserveWebResearch && !(await reserveWebResearch())) return result('unavailable', 'Web research has reached its daily limit.', 'web_daily_limit');
       const grounded = await webResearch(normalizePetTerms(topic ? `${topic}. ${message}` : message),
-        { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage });
+        { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage, previousAnswer });
       return grounded || result('unavailable', 'I could not verify a web answer.', 'web_grounding_missing');
     }
     return checked ||

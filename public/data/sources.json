@@ -260,7 +260,7 @@
   },
   {
     "id": "nist-dp-synthetic-caution",
-    "title": "Synthetic data does not automatically provide differential privacy",
+    "title": "Differentially Private Synthetic Data",
     "url": "https://www.nist.gov/blogs/cybersecurity-insights/differentially-private-synthetic-data",
     "publisher": "National Institute of Standards and Technology",
     "year": 2021,
@@ -270,7 +270,9 @@
       "reidentification",
       "risk"
     ],
-    "text": "NIST distinguishes differentially private synthetic data from synthetic data made without a formal privacy guarantee. Many synthesis methods do not satisfy differential privacy. Before treating generated records as safe to share, examine the method's privacy claim and evaluate disclosure risk.",
+    "text": "NIST says many synthetic-data methods do not satisfy differential privacy or any privacy property. Differentially private synthetic data offers a provable guarantee for people in the original data; other synthetic data may offer only partial protection. The generation method determines which claim is justified.",
+    "source_document": "Differentially Private Synthetic Data",
+    "section": "Opening discussion before Use Cases & Utility",
     "drafted_at": "2026-10-11",
     "review_status": "draft",
     "reviewed_at": null,
@@ -279,7 +281,7 @@
   },
   {
     "id": "nist-dp-synthetic-utility",
-    "title": "Synthetic data utility depends on the analysis",
+    "title": "Differentially Private Synthetic Data",
     "url": "https://www.nist.gov/blogs/cybersecurity-insights/differentially-private-synthetic-data",
     "publisher": "National Institute of Standards and Technology",
     "year": 2021,
@@ -289,7 +291,9 @@
       "evaluation",
       "utility"
     ],
-    "text": "Differentially private synthetic data can let analysts use familiar tools on artificial records, but reproducing useful correlations is difficult. NIST notes that a purpose-built private analysis often gives more accurate answers than running the same analysis on a synthetic dataset. Evaluate utility against the intended questions and subgroups.",
+    "text": "NIST says differentially private synthetic data can be analyzed with familiar tools, but constructing accurate synthetic data is difficult. For the same question, a purpose-built differentially private analysis will generally be more accurate. Preserving correlations between attributes is a particular challenge for synthetic-data generation.",
+    "source_document": "Differentially Private Synthetic Data",
+    "section": "Use Cases & Utility; Generating Synthetic Data",
     "drafted_at": "2026-10-11",
     "review_status": "draft",
     "reviewed_at": null,
