@@ -82,15 +82,24 @@ test('daily web limit prevents an additional grounded search call', async () => 
   assert.equal(calls, 0);
 });
 
-test('linkage-variable advice is prompted for case context, not a universal field or tool', async () => {
-  const model = recordingModel(ids => [{ text: 'The fields depend on what each agency can reliably use. Which common identifiers are available?', source_ids: [ids[0]] }]);
+test('linkage-variable advice can cite relevant public pilots after general guidance', async () => {
+  const model = recordingModel(ids => [
+    { text: 'No single field works for every linkage; assess completeness and error rates.', source_ids: [ids[0]] },
+    { text: 'The matching method also changes what kinds of errors can be handled.', source_ids: [ids[1]] },
+    { text: 'Arkansas tested full name, birth date and SSN on synthetic records.', source_ids: [ids[2]] },
+    { text: 'D.C. bridged different schemas with two exact PSI joins on mock data.', source_ids: [ids[4]] },
+    { text: 'The public NYSED overview describes a clean-room pilot but does not name matching fields.', source_ids: [ids[5]] }
+  ]);
   const response = await answerWithRag({ message: "what's the best practice linkage variable in cross agency", intent: 'learn' },
     { apiKey: 'test-key', fetchImpl: model.fetchImpl });
   assert.equal(response.status, 'ok');
+  assert.equal(response.segments.length, 5);
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /no single field is best/);
   assert.match(prompt, /uk-linkage-quality-assessment/);
-  assert.doesNotMatch(prompt, /mdi-ar-report-linkja-results|mdi-dc-report-triangulation/);
+  assert.match(prompt, /mdi-ar-report-linkja-results|mdi-dc-report-triangulation/);
+  assert.match(prompt, /mdi-nysed-clean-room-overview/);
+  assert.match(prompt, /Skip pilot examples for simple definitions or weak matches/);
 });
 
 test('a nuanced PET explanation can use four cited paragraphs when needed', async () => {
@@ -104,7 +113,7 @@ test('a nuanced PET explanation can use four cited paragraphs when needed', asyn
     { apiKey: 'test-key', fetchImpl: model.fetchImpl });
   assert.equal(response.status, 'ok');
   assert.equal(response.segments.length, 4);
-  assert.match(model.calls[0].body.contents[0].parts[0].text, /For a comparison, detailed follow-up, or complex use case/);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /For a detailed applied question/);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a specialist, explain mechanisms, assumptions, failure modes/);
 });
 
@@ -190,7 +199,7 @@ test('elaborate focuses the last named pilot instead of repeating the whole exam
   assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview/);
 });
 
-test('elaborate on general linkage advice stays with linkage quality guidance', async () => {
+test('elaborate on general linkage advice can use relevant pilots after the main guidance', async () => {
   const model = recordingModel(ids => [{ text: 'Compare missingness and false-link rates for the common identifiers.', source_ids: [ids[0]] }]);
   const response = await answerWithRag({
     message: 'elaborate', topic: "what's the best practice linkage variable in cross agency", intent: 'learn',
@@ -202,7 +211,7 @@ test('elaborate on general linkage advice stays with linkage quality guidance', 
   assert.equal(response.status, 'ok');
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /uk-linkage-quality-assessment/);
-  assert.doesNotMatch(prompt, /mdi-dc-report-triangulation|mdi-ar-report-linkja-results/);
+  assert.match(prompt, /mdi-dc-report-triangulation|mdi-ar-report-linkja-results/);
   assert.match(prompt, /expand the substance of the most recent assistant reply/);
 });
 
@@ -280,7 +289,7 @@ test('a PET beginner gets a primer instead of unrelated pilot results', async ()
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /mdi-pets-purpose/);
   assert.match(prompt, /ico-input-output-privacy/);
-  assert.match(prompt, /For a newcomer, define terms and give one concrete example/);
+  assert.match(prompt, /For a newcomer, define terms before technical detail/);
   assert.doesNotMatch(prompt, /mdi-nysed-clean-room-overview/);
 });
 
