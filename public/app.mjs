@@ -7,6 +7,7 @@ import { relatedMdiCase } from './related-cases.mjs';
 import { validWebSource } from './web-sources.mjs';
 import { originalSourceLabel, sourceCitationLabel } from './citations.mjs';
 import { answerParagraphs, appendInlineFormatting } from './inline-format.mjs';
+import { snapshotAnswerView, restoreAnswerView } from './answer-snapshot.mjs';
 
 const $ = selector => document.querySelector(selector);
 const el = (tag, className = '', text) => {
@@ -111,8 +112,10 @@ function openSavedChat(id) {
         docs: segment.source_ids.map(id => known.get(id)).filter(Boolean) })) : [];
     const savedSegments = loadedSegments.length && loadedSegments.every((segment, index) =>
       segment.docs.length === message.answerSegments[index].source_ids.length) ? loadedSegments : [];
+    const savedView = message.role === 'assistant' ? restoreAnswerView(message.answerView) : [];
     const restoredAnswer = message.role === 'assistant' ? el('div', 'answer') : null;
-    if (savedSegments.length) {
+    if (savedView.length) bubble.append(...savedView);
+    else if (savedSegments.length) {
       if (message.answerTitle) restoredAnswer.append(el('h2', 'answer-title', message.answerTitle));
       restoredAnswer.append(citedParagraphs({ segments: savedSegments }));
     }
@@ -125,7 +128,8 @@ function openSavedChat(id) {
     } else bubble.append(el('p', 'restored-text', message.text));
     if (message.role === 'user') lastQuestion = message.text;
     if (message.role === 'assistant' && hits.length) {
-      if (!savedSegments.length) {
+      const detailTarget = savedView.length ? bubble.querySelector('.answer') || bubble : restoredAnswer;
+      if (!savedView.length && !savedSegments.length) {
         const links = el('p', 'restored-sources', 'Sources: ');
         const linked = new Set();
         hits.forEach(({ document: doc }) => {
@@ -134,12 +138,12 @@ function openSavedChat(id) {
           links.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
           linked.add(doc.url);
         });
-        restoredAnswer.append(links);
+        detailTarget.append(links);
       }
-      if (message.searchSuggestionHtml) restoredAnswer.append(searchSuggestion(message.searchSuggestionHtml));
-      restoredAnswer.append(sourceDetails(hits, null, lastQuestion));
+      if (message.searchSuggestionHtml) detailTarget.append(searchSuggestion(message.searchSuggestionHtml));
+      detailTarget.append(sourceDetails(hits, null, lastQuestion));
     }
-    if (restoredAnswer) bubble.append(restoredAnswer);
+    if (restoredAnswer && !savedView.length) bubble.append(restoredAnswer);
     if (message.role === 'assistant') lastAssistantBubble = bubble;
     row.append(bubble);
     messages.append(row);
@@ -232,6 +236,7 @@ function addMessage(kind, content) {
   state.transcript.push({
     role: kind,
     text: messageText(bubble),
+    ...(kind === 'assistant' ? { answerView: snapshotAnswerView(bubble) } : {}),
     ...(kind === 'assistant' && Array.isArray(content?.savedSegments)
       ? { answerSegments: content.savedSegments.slice(0, 8).map(segment => ({
         text: String(segment.text).slice(0, 2200), source_ids: segment.source_ids.slice(0, 3)

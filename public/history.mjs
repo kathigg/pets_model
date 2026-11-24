@@ -20,6 +20,8 @@ export function loadHistory(storage) {
           .map(message => ({
             role: message.role,
             text: message.text.slice(0, 8000),
+            answerView: Array.isArray(message.answerView) && message.answerView.length <= 50 &&
+              JSON.stringify(message.answerView).length <= 30000 ? message.answerView : [],
             answerSegments: Array.isArray(message.answerSegments) ? message.answerSegments.slice(0, 8)
               .filter(segment => segment && typeof segment.text === 'string' && Array.isArray(segment.source_ids))
               .map(segment => ({ text: segment.text.slice(0, 2200),
