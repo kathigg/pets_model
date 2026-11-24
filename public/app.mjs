@@ -259,6 +259,7 @@ function sourceDetails(hits, extra, query = '') {
       for (const doc of docs) {
         const excerpt = sourceNoteExcerpt(doc.text, query);
         const section = doc.section || (!sameTitle && docs.length > 1 ? doc.title : '');
+        if (doc.source_quote) item.append(el('p', 'source-excerpt', `Source text${section ? ` (${section})` : ''}: “${doc.source_quote}”`));
         if (excerpt) item.append(el('p', 'source-excerpt', `Our summary${section ? ` (${section})` : ''}: ${excerpt}`));
       }
       list.append(item);

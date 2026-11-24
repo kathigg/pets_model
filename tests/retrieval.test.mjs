@@ -108,4 +108,5 @@ test('NIST synthetic-data notes identify the original page and distinct supporte
   assert.match(utility.section, /Use Cases & Utility/);
   assert.match(caution.text, /many synthetic-data methods do not satisfy differential privacy/);
   assert.match(utility.text, /purpose-built differentially private analysis/);
+  assert.equal(`${caution.source_quote} ${utility.source_quote}`.split(/\s+/).length, 25);
 });

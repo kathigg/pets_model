@@ -271,6 +271,7 @@
       "risk"
     ],
     "text": "NIST says many synthetic-data methods do not satisfy differential privacy or any privacy property. Differentially private synthetic data offers a provable guarantee for people in the original data; other synthetic data may offer only partial protection. The generation method determines which claim is justified.",
+    "source_quote": "many techniques for generating synthetic data do not satisfy differential privacy",
     "source_document": "Differentially Private Synthetic Data",
     "section": "Opening discussion before Use Cases & Utility",
     "drafted_at": "2026-10-11",
@@ -292,6 +293,7 @@
       "utility"
     ],
     "text": "NIST says differentially private synthetic data can be analyzed with familiar tools, but constructing accurate synthetic data is difficult. For the same question, a purpose-built differentially private analysis will generally be more accurate. Preserving correlations between attributes is a particular challenge for synthetic-data generation.",
+    "source_quote": "Constructing accurate differentially private synthetic data turns out to be extremely challenging in practice",
     "source_document": "Differentially Private Synthetic Data",
     "section": "Use Cases & Utility; Generating Synthetic Data",
     "drafted_at": "2026-10-11",
