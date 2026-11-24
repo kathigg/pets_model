@@ -1,6 +1,7 @@
 /** Local, inspectable retrieval over draft public-source summaries. */
 import { PETS } from './engine.mjs';
-const STOP = new Set('a an and are as at be by can do does for from has have how i in into is it its of on or our the their this to use we what when where which who why will with would your you data privacy private technology technologies pet pets'.split(' '));
+import { distance } from './vendor/fastest-levenshtein.mjs';
+const STOP = new Set('a an and are as at be by can could describe do does explain for from has have how i in into is it its know of on or our please the their this to use we what when where which who why will with would your you data privacy private technology technologies pet pets'.split(' '));
 const ALIASES = new Map(Object.entries({
   'smpc': 'mpc', 'multi-party': 'mpc', 'multiparty': 'mpc',
   'psi': 'psi', 'intersection': 'psi',
@@ -24,11 +25,33 @@ function stem(token) {
   return token;
 }
 
-/** Correct known package-name variants without changing the visitor's displayed message. */
+// Match only a small PET vocabulary. Do not rewrite arbitrary visitor terms.
+const PET_VOCABULARY = ['synthetic', 'differential', 'synthpop', 'tidysynthesis',
+  'homomorphic', 'encryption', 'federated', 'linkage', 'anonymization',
+  'pseudonymization', 'multiparty', 'intersection', 'probabilistic', 'privacy'];
+
+function correctPetWord(word) {
+  const lower = word.toLowerCase();
+  if (PET_VOCABULARY.includes(lower)) return word;
+  let best = null;
+  let bestDistance = Infinity;
+  let tie = false;
+  for (const term of PET_VOCABULARY) {
+    if (lower[0] !== term[0] || Math.abs(lower.length - term.length) > 2) continue;
+    const edits = distance(lower, term);
+    if (edits < bestDistance) { best = term; bestDistance = edits; tie = false; }
+    else if (edits === bestDistance) tie = true;
+  }
+  if (tie || bestDistance > 2 || (bestDistance === 2 && lower.at(-1) !== best.at(-1))) return word;
+  return best;
+}
+
+/** Correct close PET-term spelling without changing the visitor's displayed message. */
 export function normalizePetTerms(input) {
   return String(input || '')
     .replace(/\bsynhpop\b/gi, 'synthpop')
-    .replace(/\btidy[\s-]?(?:synethesis|synthesis)\b/gi, 'tidysynthesis');
+    .replace(/\btidy[\s-]?(?:synethesis|synthesis)\b/gi, 'tidysynthesis')
+    .replace(/\b[A-Za-z]{7,}\b/g, correctPetWord);
 }
 
 export function tokens(input) {

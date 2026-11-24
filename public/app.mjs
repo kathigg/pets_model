@@ -328,7 +328,7 @@ async function requestModel(intent, query, topic = '') {
   if (state.apiUnavailable) return { unavailable: true };
   const controller = new AbortController();
   state.controller = controller;
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 115000);
   const context = state.transcript.slice(0, -1).slice(-4).map(entry => ({
     role: entry.role, text: entry.text.slice(0, 500)
   }));

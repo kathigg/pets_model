@@ -72,6 +72,57 @@ test('misspelled package names are normalized before web research', async () => 
   assert.equal(researched, 'whats the difference between synthpop and tidysynthesis');
 });
 
+test('a misspelled synthetic-data definition uses public web grounding', async () => {
+  let researched;
+  const response = await answerWithRag({ message: 'can you explain what sythetic data is', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: async () => { throw new Error('local draft should not run'); },
+      webResearch: async question => {
+        researched = question;
+        return { status: 'ok', segments: [{ text: 'Synthetic data are generated records that model selected patterns in source data.', source_ids: ['web-0'] }],
+          sources: [{ id: 'web-0', title: 'Public technical guidance', url: 'https://ico.org.uk/', source_role: 'web_grounding' }],
+          web_suggestion_html: '<a href="https://google.com/search?q=synthetic+data">Search</a>' };
+      } });
+  assert.equal(response.status, 'ok');
+  assert.equal(researched, 'can you explain what synthetic data is');
+  assert.deepEqual(response.segments[0].source_ids, ['web-0']);
+});
+
+test('local source-gap answer retries once with grounded web evidence', async () => {
+  let modelCalls = 0;
+  let webCalls = 0;
+  let paidReservations = 0;
+  const model = recordingModel(ids => {
+    modelCalls++;
+    return [{ text: 'The provided resources do not cover the concept needed to answer this question.', source_ids: [ids[0]] }];
+  });
+  const response = await answerWithRag({ message: 'What does differential privacy mean for repeated releases?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl,
+      reserveModelCall: async () => { paidReservations++; return true; },
+      webResearch: async () => {
+        webCalls++;
+        return { status: 'ok', segments: [{ text: 'Repeated releases consume a cumulative privacy budget.', source_ids: ['web-0'] }],
+          sources: [{ id: 'web-0', title: 'Public guidance', url: 'https://www.nist.gov/', source_role: 'web_grounding' }],
+          web_suggestion_html: '<a href="https://google.com/search">Search</a>' };
+      } });
+  assert.equal(response.status, 'ok');
+  assert.equal(modelCalls, 1);
+  assert.equal(webCalls, 1);
+  assert.equal(paidReservations, 2);
+  assert.deepEqual(response.segments[0].source_ids, ['web-0']);
+});
+
+test('source-gap retry does not send a visitor-specific student topic to public Search', async () => {
+  let webCalls = 0;
+  const model = recordingModel(ids => [
+    { text: 'The provided resources do not cover this question.', source_ids: [ids[0]] }
+  ]);
+  const response = await answerWithRag({ message: 'What is differential privacy for my student records?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl,
+      webResearch: async () => { webCalls++; throw new Error('private topic sent to Search'); } });
+  assert.equal(response.status, 'ok');
+  assert.equal(webCalls, 0);
+});
+
 test('daily web limit prevents an additional grounded search call', async () => {
   let calls = 0;
   const response = await answerWithRag({ message: 'Compare synthpop and tidysynthesis', intent: 'learn' }, {
@@ -113,7 +164,7 @@ test('a nuanced PET explanation can use four cited paragraphs when needed', asyn
     { apiKey: 'test-key', fetchImpl: model.fetchImpl });
   assert.equal(response.status, 'ok');
   assert.equal(response.segments.length, 4);
-  assert.match(model.calls[0].body.contents[0].parts[0].text, /For a detailed applied question/);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /For a substantive PET question, give a complete explanation/);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a specialist, explain mechanisms, assumptions, failure modes/);
 });
 
@@ -155,7 +206,7 @@ test('synthetic-data advice leaves the MDI example to a separate linked card', a
   const prompt = model.calls[0].body.contents[0].parts[0].text;
   assert.match(prompt, /"separate_mdi_case_card":true/);
   assert.doesNotMatch(prompt, /ed-ferpa-deidentification-standard/);
-  assert.match(prompt, /Add one or two cited paragraphs with a material limitation, tradeoff, or next check/);
+  assert.match(prompt, /Add two or three cited paragraphs with material limitations, tradeoffs, or next checks when useful/);
   assert.match(prompt, /interface separately shows one short, linked public MDI example/);
   assert.doesNotMatch(prompt, /NYSED-MDI Running Meeting Notes/);
 });
@@ -377,7 +428,7 @@ test('grounded informational answer exposes only cited public-source metadata', 
   assert.equal(model.calls.length, 1);
   assert.equal(model.calls[0].options.headers['x-goog-api-key'], 'test-key');
   assert.equal(model.calls[0].body.store, undefined);
-  assert.match(model.calls[0].url, /gemini-3\.5-flash:generateContent$/);
+  assert.match(model.calls[0].url, /gemini-3\.8-flash:generateContent$/);
 });
 
 test('invented citations cause fail-closed response', async () => {

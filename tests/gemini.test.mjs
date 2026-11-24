@@ -19,16 +19,16 @@ test('Vertex express request uses structured citations without exposing the key 
     }
   });
   assert.deepEqual(draft.segments[0].source_ids, ['source-one']);
-  assert.deepEqual(usage, { model: 'gemini-3.5-flash', promptTokenCount: 123, candidatesTokenCount: 24, thoughtsTokenCount: 8, totalTokenCount: 155 });
+  assert.deepEqual(usage, { model: 'gemini-3.8-flash', promptTokenCount: 123, candidatesTokenCount: 24, thoughtsTokenCount: 8, totalTokenCount: 155 });
   assert.equal(request.options.headers['x-goog-api-key'], 'test-key');
   assert.doesNotMatch(request.url, /test-key/);
-  assert.equal(request.url, 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.5-flash:generateContent');
+  assert.equal(request.url, 'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.8-flash:generateContent');
   assert.equal(request.body.store, undefined);
-  assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+  assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');
   assert.equal(request.body.generationConfig.responseMimeType, 'application/json');
   assert.equal(request.body.generationConfig.temperature, undefined);
-  assert.equal(request.body.generationConfig.maxOutputTokens, 3072);
-  assert.equal(request.body.generationConfig.responseSchema.properties.segments.maxItems, 4);
+  assert.equal(request.body.generationConfig.maxOutputTokens, 6144);
+  assert.equal(request.body.generationConfig.responseSchema.properties.segments.maxItems, 7);
   assert.deepEqual(
     request.body.generationConfig.responseSchema.properties.segments.items.properties.source_ids.items.enum,
     ['source-one']

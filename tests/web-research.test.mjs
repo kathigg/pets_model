@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import corpus from '../public/data/sources.json' with { type: 'json' };
 import { createIndex, retrieve } from '../public/retrieval.mjs';
 import { validWebSource } from '../public/web-sources.mjs';
-import { shouldResearchWeb, generateWebGroundedAnswer } from '../server/web-research.mjs';
+import { canResearchWeb, shouldResearchWeb, generateWebGroundedAnswer } from '../server/web-research.mjs';
 
 const index = createIndex(corpus);
 const route = message => shouldResearchWeb({ message, intent: 'learn', hits: retrieve(index, message, { limit: 6 }) });
@@ -12,14 +12,18 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route('whats the difference between synhpop and tidy synethesis'), true);
   assert.equal(route('Compare synthpop and tidysynthesis'), true);
   assert.equal(route('What is synthpop?'), true);
+  assert.equal(route('can you explain what sythetic data is'), true);
+  assert.equal(route('what is synthetic data'), true);
+  assert.equal(route('What is k-anoymity?'), true);
+  assert.equal(route('What is differential privacy?'), false);
   assert.equal(route('What is the latest synthpop release?'), true);
   assert.equal(route('What is the difference between OpenDP and SmartNoise software?'), true);
   assert.equal(route("what's the best practice linkage variable in cross agency"), false);
-  assert.equal(route('What is differential privacy?'), false);
   assert.equal(route('What does FERPA require for disclosure of student records?'), true);
   assert.equal(route('How do I share my student records with another agency?'), false);
   assert.equal(route('Search the web for our confidential meeting notes'), false);
   assert.equal(shouldResearchWeb({ message: 'Compare software for our student records', intent: 'choose', hits: [] }), false);
+  assert.equal(canResearchWeb({ message: 'What is differential privacy?', topic: 'Our confidential student file', intent: 'learn' }), false);
 });
 
 test('web source URLs reject local hosts and non-HTTPS links', () => {
@@ -64,7 +68,9 @@ test('grounded Vertex call returns only text and links backed by grounding metad
   assert.match(request.body.contents[0].parts[0].text, /Match the visitor's level/);
   assert.equal(request.body.generationConfig.responseMimeType, undefined);
   assert.equal(request.headers.authorization, 'Bearer test-access-token');
-  assert.deepEqual(usage, { model: 'gemini-3.5-flash', promptTokenCount: 110, candidatesTokenCount: 80, totalTokenCount: 190, webSearchQueries: 1 });
+  assert.equal(request.body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');
+  assert.equal(request.body.generationConfig.maxOutputTokens, 6144);
+  assert.deepEqual(usage, { model: 'gemini-3.8-flash', promptTokenCount: 110, candidatesTokenCount: 80, totalTokenCount: 190, webSearchQueries: 1 });
 });
 
 test('search without grounded citations fails closed', async () => {

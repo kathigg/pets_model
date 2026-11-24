@@ -1,0 +1,1 @@
+`fastest-levenshtein.mjs` is the ESM distribution of [fastest-levenshtein](https://www.npmjs.com/package/fastest-levenshtein) v1.0.16 by Kasper U. Weihe, vendored so the browser's static ES modules and the Node server use the same bounded PET-term spelling correction. It is licensed under MIT; see `fastest-levenshtein-LICENSE.md`.

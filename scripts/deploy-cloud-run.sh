@@ -22,6 +22,7 @@ gcloud run deploy "$service" \
   --min-instances 0 \
   --max-instances 1 \
   --concurrency 1 \
+  --update-env-vars GEMINI_MODEL=gemini-3.8-flash \
   --no-allow-unauthenticated \
   --quiet
 echo 'Ready revision:'

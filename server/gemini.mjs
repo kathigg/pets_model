@@ -1,5 +1,5 @@
 /** Server-only Vertex AI transport. No API key or provider response is sent to the browser. */
-export const DEFAULT_MODEL = 'gemini-3.5-flash';
+export const DEFAULT_MODEL = 'gemini-3.8-flash';
 
 function responseSchema(sourceIds) {
   const grounded = sourceIds.length > 0;
@@ -8,7 +8,7 @@ function responseSchema(sourceIds) {
     description: grounded ? 'A PET answer grounded in the supplied public sources, with enough detail for the question.' : 'A conversational answer with enough detail for the question.',
     properties: {
       segments: {
-        type: 'ARRAY', minItems: 1, maxItems: 4,
+        type: 'ARRAY', minItems: 1, maxItems: 7,
         items: {
           type: 'OBJECT',
           properties: {
@@ -44,14 +44,14 @@ export async function generateGeminiDraft(prompt, sourceIds, {
   const request = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
-      thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: 'LOW' },
-      maxOutputTokens: 3072,
+      thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: sourceIds.length ? 'MEDIUM' : 'LOW' },
+      maxOutputTokens: 6144,
       responseMimeType: 'application/json',
       responseSchema: responseSchema(sourceIds)
     }
   };
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+  const timeout = setTimeout(() => controller.abort(), 55000);
   try {
     const headers = { 'content-type': 'application/json' };
     if (apiKey) {

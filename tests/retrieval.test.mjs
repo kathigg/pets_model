@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createIndex, retrieve, evidenceFor } from '../public/retrieval.mjs';
+import { createIndex, retrieve, evidenceFor, normalizePetTerms } from '../public/retrieval.mjs';
 
 const corpus = JSON.parse(readFileSync(new URL('../public/data/sources.json', import.meta.url), 'utf8'));
 const index = createIndex(corpus);
@@ -81,4 +81,19 @@ test('browser fallback finds both packages when their names are misspelled', () 
   const hits = retrieve(index, 'whats the difference between synhpop and tidy synethesis', { limit: 2 });
   assert.deepEqual(new Set(hits.map(hit => hit.document.id)),
     new Set(['cran-synthpop-package', 'cran-tidysynthesis-package']));
+});
+
+test('common synthetic-data typo retrieves synthetic sources, not generic explanation notes', () => {
+  const hits = retrieve(index, 'can you explain what sythetic data is', { limit: 6 });
+  assert.ok(hits.length > 0);
+  assert.ok(hits.every(hit => hit.document.tags.includes('synthetic_data')));
+});
+
+test('PET vocabulary tolerates close typos without rewriting unrelated words', () => {
+  assert.equal(normalizePetTerms('syntehtic data and differntial privcay'),
+    'synthetic data and differential privacy');
+  assert.equal(normalizePetTerms('homomorhpic encryption and federeted learning'),
+    'homomorphic encryption and federated learning');
+  assert.equal(normalizePetTerms('linkadge variables in private records'),
+    'linkage variables in private records');
 });

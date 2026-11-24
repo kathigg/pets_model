@@ -7,6 +7,13 @@
     "expect": "Direct primer and useful public reading, without a case questionnaire"
   },
   {
+    "id": "synthetic_definition",
+    "persona": "Curious officer who misspells a basic PET term",
+    "message": "Can you explain what sythetic data is and why it might protect privacy?",
+    "intent": "learn",
+    "expect": "A direct, detailed web-grounded definition with limits, not unrelated disclosure-control sources or a case questionnaire"
+  },
+  {
     "id": "nebraska",
     "persona": "Analyst exploring fake data for early testing",
     "message": "We want fake education data so analysts can test a dashboard. What are the benefits and limits of synthetic data, and has MDI worked on this?",

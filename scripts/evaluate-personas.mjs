@@ -3,12 +3,11 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path';
 import scenarios from '../data/persona_scenarios.json' with { type: 'json' };
 import { answerWithRag } from '../server/rag.mjs';
+import { DEFAULT_MODEL } from '../server/gemini.mjs';
 
 const selected = process.argv.slice(2);
 const cases = selected.length ? scenarios.filter(item => selected.includes(item.id)) : scenarios;
 if (!cases.length || cases.length > 12) throw new Error('Select 1–12 known persona IDs.');
-if (!process.env.CLOUDSDK_CONFIG) throw new Error('Set CLOUDSDK_CONFIG to a temporary Google Cloud login.');
-
 const gcloud = process.env.GCLOUD_BIN || 'gcloud';
 let accessToken;
 try {
@@ -20,10 +19,13 @@ const outputDirectory = resolve('work');
 mkdirSync(outputDirectory, { recursive: true });
 const results = [];
 const csv = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
+const introductory = Date.now() < Date.parse('2027-01-01T00:00:00Z');
+const inputRate = introductory ? 0.75 / 1_000_000 : 1.5 / 1_000_000;
+const outputRate = introductory ? 3.75 / 1_000_000 : 7.5 / 1_000_000;
 for (const scenario of cases) {
   const usage = [];
   const answer = await answerWithRag({ message: scenario.message, intent: scenario.intent }, {
-    projectId: 'mdi-yimingwu-pets', location: 'global', model: 'gemini-3.5-flash',
+    projectId: 'mdi-yimingwu-pets', location: 'global', model: DEFAULT_MODEL,
     accessTokenProvider: async () => accessToken,
     onUsage: event => usage.push(event)
   });
@@ -36,11 +38,11 @@ for (const scenario of cases) {
   };
   results.push(record);
   const tokenCost = usage.reduce((sum, event) => sum +
-    (event.promptTokenCount || 0) * 0.0000015 +
-    ((event.candidatesTokenCount || 0) + (event.thoughtsTokenCount || 0)) * 0.000009, 0);
+    (event.promptTokenCount || 0) * inputRate +
+    ((event.candidatesTokenCount || 0) + (event.thoughtsTokenCount || 0)) * outputRate, 0);
   const groundingUpperBound = usage.reduce((sum, event) => sum + (event.webSearchQueries || 0) * 0.014, 0);
   const row = [new Date().toISOString(), 'Vertex AI Gemini', `persona evaluation: ${scenario.id}`,
-    'gemini-3.5-flash', `${usage.length} call; ${usage.reduce((n, x) => n + (x.promptTokenCount || 0), 0)} prompt; ${usage.reduce((n, x) => n + (x.candidatesTokenCount || 0), 0)} response; ${usage.reduce((n, x) => n + (x.thoughtsTokenCount || 0), 0)} thinking; ${usage.reduce((n, x) => n + (x.webSearchQueries || 0), 0)} web queries`,
+    DEFAULT_MODEL, `${usage.length} call; ${usage.reduce((n, x) => n + (x.promptTokenCount || 0), 0)} prompt; ${usage.reduce((n, x) => n + (x.candidatesTokenCount || 0), 0)} response; ${usage.reduce((n, x) => n + (x.thoughtsTokenCount || 0), 0)} thinking; ${usage.reduce((n, x) => n + (x.webSearchQueries || 0), 0)} web queries`,
     (tokenCost + groundingUpperBound).toFixed(6), '', answer.status,
     'Conservative estimate includes all search queries at paid rate; actual billing and free grounding allowance pending'];
   appendFileSync(resolve(outputDirectory, 'cloud-cost-log.csv'), row.map(csv).join(',') + '\n');
