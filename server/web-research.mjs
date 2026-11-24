@@ -54,6 +54,7 @@ function groundedSegments(candidate, metadata) {
     .filter(item => typeof item?.segment?.text === 'string' && Array.isArray(item.groundingChunkIndices))
     .sort((a, b) => (a.segment.startIndex || 0) - (b.segment.startIndex || 0));
   let previousEnd = 0;
+  let paragraph = 1;
   for (const support of supports) {
     const original = support.segment.text;
     const text = original.trim().replace(/\s+/g, ' ');
@@ -81,14 +82,11 @@ function groundedSegments(candidate, metadata) {
     const punctuationOnly = /^[\s*_'"“”()[\],.;:!?-]*$/.test(gap);
     const separator = punctuationOnly ? gap.match(/[.!?]/)?.[0] || '' : '';
     if (previous && separator && !/[.!?][*_'"“”)]*$/.test(previous.text)) previous.text += separator;
-    const paragraphBreak = punctuationOnly && /\n\s*\n/.test(gap);
+    const paragraphBreak = /\n\s*\n/.test(gap);
     const splitForReading = previous && previous.text.length >= 330 && /[.!?][*_'"“”)]*$/.test(previous.text);
-    if (previous && !paragraphBreak && !splitForReading &&
-        previous.source_ids.join(',') === ids.join(',') && previous.text.length + text.length < 1200) {
-      previous.text += ` ${text}`;
-    } else if (segments.length < 6) {
-      segments.push({ text, source_ids: ids });
-    } else break;
+    if ((paragraphBreak || splitForReading) && paragraph < 7) paragraph += 1;
+    if (segments.length < 16) segments.push({ paragraph, text, source_ids: ids });
+    else break;
   }
   const tail = generated.slice(previousEnd);
   if (segments.length && /^[\s*_'"“”()[\],.;:!?-]*$/.test(tail)) {

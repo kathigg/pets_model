@@ -104,9 +104,9 @@ test('longer grounded answers retain consecutive supported points', async () => 
       }
     }] })
   });
-  assert.equal(answer.segments.length, 1);
-  assert.equal(answer.segments[0].text, points.join(' '));
-  assert.deepEqual(answer.segments[0].source_ids, ['web-0']);
+  assert.equal(answer.segments.length, 6);
+  assert.deepEqual(answer.segments.map(segment => segment.text), points);
+  assert.ok(answer.segments.every(segment => segment.source_ids[0] === 'web-0'));
 });
 
 test('grounded answer retains punctuation and paragraph breaks around cited spans', async () => {
@@ -129,6 +129,7 @@ test('grounded answer retains punctuation and paragraph breaks around cited span
     'It helps testing, but privacy is not automatic.'
   ]);
   assert.deepEqual(answer.segments.map(segment => segment.source_ids), [['web-0'], ['web-0']]);
+  assert.deepEqual(answer.segments.map(segment => segment.paragraph), [1, 2]);
 });
 
 test('grounding support must quote actual generated answer text', async () => {

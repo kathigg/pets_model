@@ -525,6 +525,21 @@ test('grounded informational answer exposes only cited public-source metadata', 
   assert.match(model.calls[0].url, /gemini-3\.8-flash:generateContent$/);
 });
 
+test('grounded answer preserves sentence-specific citations and paragraph groups', async () => {
+  const model = recordingModel(ids => [
+    { paragraph: 1, text: 'First supported sentence.', source_ids: [ids[0]] },
+    { paragraph: 1, text: 'Second supported sentence.', source_ids: [ids[1]] },
+    { paragraph: 2, text: 'A separate point.', source_ids: [ids[0]] }
+  ]);
+  const response = await answerWithRag({ message: 'How can agencies link records privately?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.deepEqual(response.segments.map(segment => segment.paragraph), [1, 1, 2]);
+  assert.deepEqual(response.segments.map(segment => segment.source_ids),
+    [[response.sources[0].id], [response.sources[1].id], [response.sources[0].id]]);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /Keep source IDs specific to each sentence/);
+});
+
 test('invented citations cause fail-closed response', async () => {
   const model = recordingModel(() => [{ text: 'An unsupported claim.', source_ids: ['invented-source'] }]);
   const response = await answerWithRag({ message: 'Explain private set intersection', intent: 'learn' }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });

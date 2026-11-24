@@ -7,6 +7,7 @@ import { relatedMdiCase } from './related-cases.mjs';
 import { validWebSource } from './web-sources.mjs';
 import { originalSourceLabel, sourceCitationLabel } from './citations.mjs';
 import { answerParagraphs, appendInlineFormatting } from './inline-format.mjs';
+import { citationUnits } from './citation-layout.mjs';
 import { snapshotAnswerView, restoreAnswerView } from './answer-snapshot.mjs';
 
 const $ = selector => document.querySelector(selector);
@@ -108,7 +109,7 @@ function openSavedChat(id) {
       .filter(Boolean).map(document => ({ document })) : [];
     const known = new Map(hits.map(hit => [hit.document.id, hit.document]));
     const loadedSegments = message.role === 'assistant' && Array.isArray(message.answerSegments)
-      ? message.answerSegments.map(segment => ({ text: segment.text,
+      ? message.answerSegments.map(segment => ({ text: segment.text, paragraph: segment.paragraph,
         docs: segment.source_ids.map(id => known.get(id)).filter(Boolean) })) : [];
     const savedSegments = loadedSegments.length && loadedSegments.every((segment, index) =>
       segment.docs.length === message.answerSegments[index].source_ids.length) ? loadedSegments : [];
@@ -238,8 +239,9 @@ function addMessage(kind, content) {
     text: messageText(bubble),
     ...(kind === 'assistant' ? { answerView: snapshotAnswerView(bubble) } : {}),
     ...(kind === 'assistant' && Array.isArray(content?.savedSegments)
-      ? { answerSegments: content.savedSegments.slice(0, 8).map(segment => ({
-        text: String(segment.text).slice(0, 2200), source_ids: segment.source_ids.slice(0, 3)
+      ? { answerSegments: content.savedSegments.slice(0, 16).map(segment => ({
+        text: String(segment.text).slice(0, 2200), paragraph: segment.paragraph,
+        source_ids: segment.source_ids.slice(0, 3)
       })), answerTitle: String(content.savedTitle || '').slice(0, 120) } : {}),
     sources: kind === 'assistant' ? state.evidence.map(hit => ({
       id: hit.document.id, title: hit.document.title, url: hit.document.url,
@@ -303,7 +305,7 @@ function sourceDetails(hits, extra, query = '') {
 
 function checkedModelAnswer(payload) {
   if (!['ok', 'chat'].includes(payload?.status) || !Array.isArray(payload.segments) || !Array.isArray(payload.sources)
-    || !payload.segments.length || payload.segments.length > 8) return null;
+    || !payload.segments.length || payload.segments.length > 16) return null;
   if (payload.status === 'chat') {
     if (payload.sources.length || payload.segments.some(segment =>
       typeof segment?.text !== 'string' || !segment.text.trim() || segment.text.length > 2200 ||
@@ -336,28 +338,32 @@ function checkedModelAnswer(payload) {
       if (!docs.some(entry => entry.id === id)) docs.push(doc);
       cited.set(id, doc);
     }
-    segments.push({ text, docs });
+    const paragraph = segment.paragraph;
+    if (paragraph !== undefined && (!Number.isInteger(paragraph) || paragraph < 1 || paragraph > 7)) return null;
+    segments.push({ text, docs, paragraph });
   }
   return { segments, hits: [...cited.values()].map(document => ({ document, score: 1 })), webSuggestionHtml: webSources ? suggestion : '' };
 }
 
 function citedParagraphs(model) {
   const content = el('div', 'model-explanation');
-  model.segments.forEach(segment => {
-    for (const text of answerParagraphs(segment.text)) {
-      const paragraph = el('p', 'source-answer');
-      appendInlineFormatting(paragraph, text);
-      paragraph.append(document.createTextNode(' '));
-      const linked = new Set();
-      segment.docs.forEach((doc, i) => {
-        if (linked.has(doc.url)) return;
-        if (i && linked.size) paragraph.append(document.createTextNode(' '));
-        paragraph.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
-        linked.add(doc.url);
-      });
+  let group = null;
+  let paragraph;
+  for (const unit of citationUnits(model.segments)) {
+    if (unit.group !== group) {
+      paragraph = el('p', 'source-answer');
       content.append(paragraph);
-    }
-  });
+      group = unit.group;
+    } else paragraph.append(document.createTextNode(' '));
+    appendInlineFormatting(paragraph, unit.text);
+    const linked = new Set();
+    unit.docs.forEach(doc => {
+      if (linked.has(doc.url)) return;
+      paragraph.append(document.createTextNode(' '));
+      paragraph.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
+      linked.add(doc.url);
+    });
+  }
   return content;
 }
 
@@ -367,7 +373,8 @@ function modelMessage(model, title = '', query = '') {
   state.pendingQuestion = model.followup || null;
   const answer = el('div', 'answer');
   answer.savedSegments = model.segments.map(segment => ({
-    text: segment.text, source_ids: segment.docs.map(doc => doc.id)
+    text: segment.text, paragraph: segment.paragraph,
+    source_ids: segment.docs.map(doc => doc.id)
   }));
   answer.savedTitle = title;
   if (title) answer.append(el('h2', 'answer-title', title));

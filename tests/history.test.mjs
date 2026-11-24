@@ -43,15 +43,15 @@ test('reload retains every cited web source in a multi-paragraph answer', () => 
     id: `web-${index}`, url: `https://example.org/source-${index}`, source_role: 'web_grounding'
   }));
   const answerSegments = sources.map((source, index) => ({
-    text: `Paragraph ${index + 1}.`, source_ids: [source.id]
+    text: `Sentence ${index + 1}.`, paragraph: Math.floor(index / 2) + 1, source_ids: [source.id]
   }));
   saveHistory(storage, { activeId: 'web', chats: [{
     id: 'web', title: 'Sources', messages: [{ role: 'assistant', text: 'Answer.', sources,
-      answerSegments: answerSegments.slice(0, 8) }]
+      answerSegments }]
   }] });
   const restored = loadHistory(storage).chats[0].messages[0];
   assert.equal(restored.sources.length, 12);
-  assert.deepEqual(restored.answerSegments, answerSegments.slice(0, 8));
+  assert.deepEqual(restored.answerSegments, answerSegments);
 });
 
 test('evidence excerpt quotes the matching draft note sentence exactly', () => {

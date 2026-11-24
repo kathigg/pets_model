@@ -8,19 +8,21 @@ function responseSchema(sourceIds) {
     description: grounded ? 'A PET answer grounded in the supplied public sources, with enough detail for the question.' : 'A conversational answer with enough detail for the question.',
     properties: {
       segments: {
-        type: 'ARRAY', minItems: 1, maxItems: 7,
+        type: 'ARRAY', minItems: 1, maxItems: grounded ? 16 : 7,
         items: {
           type: 'OBJECT',
           properties: {
-            text: { type: 'STRING', description: 'One plain-language answer segment; explain complex points fully.' },
+            ...(grounded ? { paragraph: { type: 'INTEGER', minimum: 1, maximum: 7,
+              description: 'Paragraph group number. Use the same number for consecutive sentences in one paragraph.' } } : {}),
+            text: { type: 'STRING', description: grounded ? 'One complete factual sentence. Put its public source IDs in source_ids.' : 'One plain-language answer segment; explain complex points fully.' },
             source_ids: {
               type: 'ARRAY', minItems: grounded ? 1 : 0, maxItems: grounded ? 3 : 0,
-              description: 'IDs of the supplied public sources supporting this segment.',
+              description: 'IDs of the supplied public sources supporting this sentence.',
               items: grounded ? { type: 'STRING', format: 'enum', enum: sourceIds } : { type: 'STRING' }
             }
           },
-          propertyOrdering: ['text', 'source_ids'],
-          required: ['text', 'source_ids']
+          propertyOrdering: grounded ? ['paragraph', 'text', 'source_ids'] : ['text', 'source_ids'],
+          required: grounded ? ['paragraph', 'text', 'source_ids'] : ['text', 'source_ids']
         }
       }
     },

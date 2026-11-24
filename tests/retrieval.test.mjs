@@ -56,6 +56,14 @@ test('NIST ranks higher, Education Department lower, and FERPA still favors lega
   assert.ok(legal.every(hit => hit.document.source_role === 'legal_guidance'));
 });
 
+test('NSF award and IEEE questions retrieve their specific public pages', () => {
+  const awards = retrieve(index, 'What America’s DataHub awards are investing in privacy preserving record linkage and synthetic data?', { limit: 5 });
+  assert.ok(awards.some(hit => hit.document.id === 'adh-pprl2-award'));
+  assert.ok(awards.some(hit => hit.document.id === 'adh-synthetic-award'));
+  const he = retrieve(index, 'How does homomorphic encryption work according to IEEE?', { limit: 3 });
+  assert.equal(he[0]?.document.id, 'ieee-he-overview');
+});
+
 test('unrelated query has no fabricated evidence', () => {
   assert.deepEqual(retrieve(index, 'volcanoes astrophysics xylophone', { limit: 5 }), []);
   assert.deepEqual(retrieve(index, 'What are the cafeteria menus in schools?', { limit: 5 }), []);
