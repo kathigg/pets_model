@@ -75,6 +75,24 @@ test('search without grounded citations fails closed', async () => {
   assert.equal(answer, null);
 });
 
+test('longer grounded answers retain consecutive supported points', async () => {
+  const points = Array.from({ length: 6 }, (_, i) => `Supported explanation ${i + 1} gives a useful detail.`);
+  const answer = await generateWebGroundedAnswer('Explain synthetic data in detail', {
+    apiKey: 'test-key',
+    fetchImpl: async () => Response.json({ candidates: [{ finishReason: 'STOP',
+      content: { parts: [{ text: points.join(' ') }] },
+      groundingMetadata: {
+        searchEntryPoint: { renderedContent: '<a href="https://google.com/search">Search</a>' },
+        groundingChunks: [{ web: { uri: 'https://www.nist.gov/', title: 'NIST' } }],
+        groundingSupports: points.map((text, i) => ({ segment: { startIndex: i * 50, text }, groundingChunkIndices: [0] }))
+      }
+    }] })
+  });
+  assert.equal(answer.segments.length, 1);
+  assert.equal(answer.segments[0].text, points.join(' '));
+  assert.deepEqual(answer.segments[0].source_ids, ['web-0']);
+});
+
 test('grounding support must quote actual generated answer text', async () => {
   const answer = await generateWebGroundedAnswer('Compare packages', {
     apiKey: 'test-key',

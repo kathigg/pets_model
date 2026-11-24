@@ -54,8 +54,12 @@ function groundedSegments(candidate, metadata) {
       if (ids.length === 3) break;
     }
     if (!ids.length) continue;
-    segments.push({ text, source_ids: ids });
-    if (segments.length === 4) break;
+    const previous = segments.at(-1);
+    if (previous && previous.source_ids.join(',') === ids.join(',') && previous.text.length + text.length < 1200) {
+      previous.text += ` ${text}`;
+    } else if (segments.length < 4) {
+      segments.push({ text, source_ids: ids });
+    } else break;
   }
   const used = new Set(segments.flatMap(segment => segment.source_ids));
   return { segments, sources: [...sources.values()].filter(source => used.has(source.id)) };
