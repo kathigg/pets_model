@@ -186,6 +186,20 @@ test('a nuanced PET explanation can use four cited paragraphs when needed', asyn
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a specialist, explain mechanisms, assumptions, failure modes/);
 });
 
+test('straightforward PET explanations use low effort while applied comparisons retain medium', async () => {
+  const simple = recordingModel(ids => [{ text: 'PSI compares overlapping values without sharing the values directly.', source_ids: [ids[0]] }]);
+  const simpleReply = await answerWithRag({ message: 'What is private set intersection?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: simple.fetchImpl });
+  assert.equal(simpleReply.status, 'ok');
+  assert.equal(simple.calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+
+  const applied = recordingModel(ids => [{ text: 'There is no universal best linkage field.', source_ids: [ids[0]] }]);
+  const appliedReply = await answerWithRag({ message: 'What is the best practice linkage variable across agencies?', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: applied.fetchImpl });
+  assert.equal(appliedReply.status, 'ok');
+  assert.equal(applied.calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');
+});
+
 test('Nebraska answer receives concrete public report passages', async () => {
   const model = recordingModel(ids => [
     { text: 'NSWERS and the Urban Institute began with separate graduation and time-to-employment synthetic datasets.', source_ids: [ids[0]] },

@@ -50,6 +50,21 @@ test('project-scoped Vertex request uses its project and location, with 2.5 thin
   assert.deepEqual(request.body.generationConfig.thinkingConfig, { thinkingBudget: 1024 });
 });
 
+test('a straightforward Gemini 3 question can use low thinking without losing cited output capacity', async () => {
+  let body;
+  await generateGeminiDraft('What is private set intersection?', ['source-one'], {
+    apiKey: 'test-key', thinkingLevel: 'LOW', fetchImpl: async (_url, options) => {
+      body = JSON.parse(options.body);
+      return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{
+        text: JSON.stringify({ segments: [{ text: 'A cited definition.', source_ids: ['source-one'] }] })
+      }] } }] });
+    }
+  });
+  assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
+  assert.equal(body.generationConfig.maxOutputTokens, 4096);
+  assert.deepEqual(body.generationConfig.responseSchema.properties.segments.items.properties.source_ids.items.enum, ['source-one']);
+});
+
 test('Cloud Run service identity uses a bearer token for project-scoped Vertex', async () => {
   let request;
   let tokenCalls = 0;

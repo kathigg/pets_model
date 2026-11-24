@@ -29,7 +29,7 @@ function responseSchema(sourceIds) {
 }
 
 export async function generateGeminiDraft(prompt, sourceIds, {
-  apiKey, accessTokenProvider, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch, onUsage
+  apiKey, accessTokenProvider, model = DEFAULT_MODEL, projectId, location = 'global', fetchImpl = fetch, onUsage, thinkingLevel
 } = {}) {
   if (!apiKey && (!accessTokenProvider || !projectId)) throw new Error('Missing model credential');
   if (apiKey && typeof apiKey !== 'string') throw new Error('Invalid model credential');
@@ -38,14 +38,16 @@ export async function generateGeminiDraft(prompt, sourceIds, {
   if (projectId && !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(projectId)) throw new Error('Invalid Vertex project ID');
   if (projectId && !/^(?:global|[a-z]+-[a-z]+[0-9])$/.test(location)) throw new Error('Invalid Vertex location');
   if (!Array.isArray(sourceIds)) throw new Error('Invalid source IDs');
+  if (thinkingLevel !== undefined && !['LOW', 'MEDIUM', 'HIGH'].includes(thinkingLevel)) throw new Error('Invalid thinking level');
+  const effort = thinkingLevel || (sourceIds.length ? 'MEDIUM' : 'LOW');
   const modelPath = `publishers/google/models/${model}:generateContent`;
   const scope = projectId ? `projects/${projectId}/locations/${location}/` : '';
   const url = `https://aiplatform.googleapis.com/v1/${scope}${modelPath}`;
   const request = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: {
-      thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: sourceIds.length ? 'MEDIUM' : 'LOW' },
-      maxOutputTokens: 6144,
+      thinkingConfig: model.startsWith('gemini-2.5-') ? { thinkingBudget: 1024 } : { thinkingLevel: effort },
+      maxOutputTokens: effort === 'LOW' && !model.startsWith('gemini-2.5-') ? 4096 : 6144,
       responseMimeType: 'application/json',
       responseSchema: responseSchema(sourceIds)
     }

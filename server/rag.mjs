@@ -39,6 +39,12 @@ function asksToActOnProtectedRecords(message) {
     && /\b(?:protected|student records?|pii|personally identifiable)\b/i.test(message);
 }
 
+function answerEffort(intent, message, topic = '') {
+  if (intent !== 'learn') return 'MEDIUM';
+  return /\b(?:compare|comparison|difference|versus|tradeoffs?|best practice|legislation|legal|ferpa|gdpr|compliance|regulat\w*|policy|policies|recommend\w*|specific|pilot|case study|limitations?)\b/i
+    .test(`${topic} ${message}`) ? 'MEDIUM' : 'LOW';
+}
+
 function evidenceForTask(intent, message, assessment, context, topic = '') {
   if (intent === 'choose') {
     const codes = recommendationEvidenceCodes(assessment);
@@ -239,7 +245,8 @@ export async function answerWithRag(input, { apiKey, accessTokenProvider, model,
     const draft = await generateGeminiDraft(
       prompt,
       conversation ? [] : hits.map(hit => hit.document.id),
-      { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage }
+      { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, onUsage,
+        thinkingLevel: conversation ? 'LOW' : answerEffort(intent, message, topic) }
     );
     const checked = conversation ? validateConversation(draft) : validateDraft(draft, hits, intent === 'learn');
     if (intakeQuestion) {
