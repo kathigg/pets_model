@@ -6,7 +6,7 @@
 
 A chatbot for exploring privacy-enhancing technologies (PETs) in education data projects. It explains options, asks for the facts needed to assess a use case, and helps plan a reviewed pilot. It is decision support, not a legal determination or an expert-approved design.
 
-**Hosting status (November 17, 2026):** The [private Cloud Run chatbot](https://pets-model-850678646784.us-east1.run.app) is live in `mdi-yimingwu-pets`, currently on revision `pets-model-00022-dbm`. Identity-Aware Proxy (IAP) requires a Google sign-in. The web-research and answer-length changes in this checkout are pushed to GitHub but have not yet been deployed or live-tested. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) remains separate and uses the public-source browser fallback. Access for other named teammates still needs administrator confirmation.
+**Hosting status (November 24, 2026):** The [private Cloud Run chatbot](https://pets-model-850678646784.us-east1.run.app) is in `mdi-yimingwu-pets`; its last verified revision was `pets-model-00022-dbm`. Identity-Aware Proxy (IAP) requires a Google sign-in. The web-research and answer-length changes in this checkout are pushed to GitHub but have not yet been deployed or live-tested. The [Sites preview](https://pets-model.fluffy-buddy-4572.chatgpt.site) remains separate and uses the public-source browser fallback. Access for other named teammates still needs administrator confirmation.
 
 ## How the chatbot works
 

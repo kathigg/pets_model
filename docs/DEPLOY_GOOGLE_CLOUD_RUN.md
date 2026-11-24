@@ -1,6 +1,16 @@
 # Deploy PETs Model to Google Cloud Run
 
-**Status (November 14, 2026):** The private [`pets-model` service](https://pets-model-850678646784.us-east1.run.app) is ready in `mdi-yimingwu-pets` (`us-east1`), revision `pets-model-00022-dbm`, serving 100% of traffic. It uses `gemini-3.5-flash` through `pets-model-runtime@mdi-yimingwu-pets.iam.gserviceaccount.com`. Direct IAP remains enabled and its service agent is the sole Cloud Run Invoker. A live synthetic-data case showed a concise, linked Nebraska NSWERS example and relevant public technical guidance after the visitor selected “Already public.” Earlier live checks covered the feedback prompts and saved answer choices. All 76 automated tests and 18 retrieval evaluations pass. Minimum instances are zero; maximum instances and concurrency are one. No confidential NYSED meeting notes or private retrieval integration are in the service.
+## Cloud Shell when the local CLI login fails
+
+From the Google Cloud Console for `mdi-yimingwu-pets`, open Cloud Shell and authorize it. Cloud Shell already includes `gcloud`, so no API key or local CLI login is needed. Run:
+
+```bash
+git clone https://github.com/kathigg/pets_model.git && cd pets_model && bash scripts/deploy-cloud-run.sh
+```
+
+The script deploys the checked-out GitHub commit to the existing private `pets-model` service, keeps the dedicated runtime identity, zero minimum instances, one maximum instance, one concurrent request, and no unauthenticated access. It does not change the IAP visitor policy. Source deployment starts one Cloud Build job and can incur charges. After it finishes, check the printed ready revision and test a public web question such as “What is the difference between synthpop and tidysynthesis?” The server uses Vertex AI Google Search grounding and returns only metadata-supported text and web links. Cloud Shell may ask you to authorize its Google Cloud access when it first starts.
+
+**Last verified deployment (November 14, 2026):** The private [`pets-model` service](https://pets-model-850678646784.us-east1.run.app) was ready in `mdi-yimingwu-pets` (`us-east1`), revision `pets-model-00022-dbm`, serving 100% of traffic. It uses `gemini-3.5-flash` through `pets-model-runtime@mdi-yimingwu-pets.iam.gserviceaccount.com`. Direct IAP remained enabled and its service agent was the sole Cloud Run Invoker. A live synthetic-data case showed a concise, linked Nebraska NSWERS example and relevant public technical guidance after the visitor selected “Already public.” Earlier live checks covered the feedback prompts and saved answer choices. The newer web-grounding code has **not been verified on Cloud Run**; 91 automated tests and 19 retrieval evaluations pass locally as of November 24. Minimum instances are zero; maximum instances and concurrency are one. No confidential NYSED meeting notes or private retrieval integration are in the service.
 
 The deployment CLI warned that it could not change the service IAM policy. A read after deployment confirmed the policy still grants `roles/run.invoker` only to the IAP service agent, with no `allUsers` grant. The account still cannot inspect the separate IAP visitor policy. The existing `BILLING_APP_LABEL=kathleen-chatbot` environment variable was preserved.
 
