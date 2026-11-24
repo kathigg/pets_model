@@ -14,6 +14,11 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route('What is synthpop?'), true);
   assert.equal(route('can you explain what sythetic data is'), true);
   assert.equal(route('what is synthetic data'), true);
+  assert.equal(route('What is private set intersection?'), false);
+  assert.equal(route('What is secure multiparty computation?'), false);
+  assert.equal(route('What is homomorphic encryption?'), false);
+  assert.equal(route('What is pseudonymization?'), true);
+  assert.equal(route('What is the best practice linkage variable in cross agency?'), false);
   assert.equal(route('What is k-anoymity?'), true);
   assert.equal(route('What is differential privacy?'), false);
   assert.equal(route('What is the latest synthpop release?'), true);

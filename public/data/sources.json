@@ -530,6 +530,7 @@
     "publisher": "UK Information Commissioner's Office",
     "year": 2023,
     "tags": [
+      "definition",
       "tee",
       "confidential_computing",
       "input_privacy",
@@ -549,6 +550,7 @@
     "publisher": "UK Information Commissioner's Office",
     "year": 2023,
     "tags": [
+      "definition",
       "smpc",
       "mpc",
       "multiple_data_holders",
@@ -569,6 +571,7 @@
     "publisher": "UK Information Commissioner's Office",
     "year": 2023,
     "tags": [
+      "definition",
       "psi",
       "mpc",
       "linkage",
@@ -589,6 +592,7 @@
     "publisher": "UK Information Commissioner's Office",
     "year": 2023,
     "tags": [
+      "definition",
       "federated_learning",
       "ai",
       "distributed_data",
@@ -608,6 +612,7 @@
     "publisher": "UK Information Commissioner's Office",
     "year": 2023,
     "tags": [
+      "definition",
       "homomorphic_encryption",
       "fhe",
       "input_privacy",
@@ -628,6 +633,7 @@
     "publisher": "UK Information Commissioner's Office",
     "year": 2026,
     "tags": [
+      "definition",
       "zero_knowledge",
       "selective_disclosure",
       "verification",

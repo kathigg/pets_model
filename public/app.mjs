@@ -5,6 +5,7 @@ import { clearHistory, loadHistory, saveHistory } from './history.mjs';
 import { sourceNoteExcerpt } from './evidence-notes.mjs';
 import { relatedMdiCase } from './related-cases.mjs';
 import { validWebSource } from './web-sources.mjs';
+import { originalSourceLabel, sourceCitationLabel } from './citations.mjs';
 
 const $ = selector => document.querySelector(selector);
 const el = (tag, className = '', text) => {
@@ -112,7 +113,7 @@ function openSavedChat(id) {
         hits.forEach(({ document: doc }) => {
           if (linked.has(doc.url)) return;
           if (linked.size) links.append(document.createTextNode(' · '));
-          links.append(safeLink(doc.url, `${doc.title} ↗`, 'inline-citation'));
+          links.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
           linked.add(doc.url);
         });
         bubble.append(links);
@@ -252,13 +253,14 @@ function sourceDetails(hits, extra, query = '') {
     const list = el('div', 'source-links');
     for (const [url, docs] of groups) {
       const item = el('div', 'source-evidence');
-      const sameTitle = docs.every(doc => doc.title === docs[0].title);
-      const label = sameTitle ? docs[0].title : url === 'https://mdi.georgetown.edu/pets/use-cases/'
-        ? 'MDI PETs use cases' : `${docs[0].publisher} source page`;
+      const label = originalSourceLabel(docs);
       item.append(safeLink(url, `${label} ↗`, 'citation'));
       for (const doc of docs) {
         const excerpt = sourceNoteExcerpt(doc.text, query);
-        const section = doc.section || (!sameTitle && docs.length > 1 ? doc.title : '');
+        const section = doc.section || '';
+        if (doc.source_role !== 'web_grounding' && doc.title !== label) {
+          item.append(el('p', 'source-excerpt', `Our note: ${doc.title}`));
+        }
         if (doc.source_quote) item.append(el('p', 'source-excerpt', `Source text${section ? ` (${section})` : ''}: “${doc.source_quote}”`));
         if (excerpt) item.append(el('p', 'source-excerpt', `Our summary${section ? ` (${section})` : ''}: ${excerpt}`));
       }
@@ -318,7 +320,7 @@ function citedParagraphs(model) {
     segment.docs.forEach((doc, i) => {
       if (linked.has(doc.url)) return;
       if (i && linked.size) paragraph.append(document.createTextNode(' '));
-      paragraph.append(safeLink(doc.url, `${doc.title} ↗`, 'inline-citation'));
+      paragraph.append(safeLink(doc.url, `${sourceCitationLabel(doc)} ↗`, 'inline-citation'));
       linked.add(doc.url);
     });
     content.append(paragraph);
@@ -587,9 +589,9 @@ function learningMessage(query, retrievalQuery = query) {
   if (packageComparison && hits.length === 2) {
     const [synthpop, tidy] = hits;
     const first = el('p', 'source-answer', 'Both are R packages for synthetic data. synthpop can automate sequential synthesis through syn() and includes tools to assess utility and disclosure risk. ');
-    first.append(safeLink(synthpop.document.url, `${synthpop.document.title} ↗`, 'inline-citation'));
+    first.append(safeLink(synthpop.document.url, `${sourceCitationLabel(synthpop.document)} ↗`, 'inline-citation'));
     const second = el('p', 'source-answer', 'tidysynthesis uses a tidymodels-style workflow with explicit controls for ordering, tuning, constraints, and noise. Neither package makes a dataset safe to release without review. ');
-    second.append(safeLink(tidy.document.url, `${tidy.document.title} ↗`, 'inline-citation'));
+    second.append(safeLink(tidy.document.url, `${sourceCitationLabel(tidy.document)} ↗`, 'inline-citation'));
     answer.append(first, second, sourceDetails(hits, null, retrievalQuery));
     state.evidence = hits;
     return answer;
@@ -602,7 +604,7 @@ function learningMessage(query, retrievalQuery = query) {
     seen.add(hit.document.text);
     shown.push(hit);
     const paragraph = el('p', 'source-answer', `${hit.document.text} `);
-    paragraph.append(safeLink(hit.document.url, `${hit.document.title} ↗`, 'inline-citation'));
+    paragraph.append(safeLink(hit.document.url, `${sourceCitationLabel(hit.document)} ↗`, 'inline-citation'));
     answer.append(paragraph);
   });
   state.evidence = shown;
@@ -724,7 +726,7 @@ function exportSummary() {
   lines.push('', '## Conversation', ...state.transcript.flatMap(entry => [
     `### ${entry.role === 'assistant' ? 'Assistant' : 'You'}`,
     entry.text,
-    ...(entry.sources.length ? ['', 'Sources:', ...entry.sources.map(source => `- ${source.title} — ${source.url}`)] : []),
+    ...(entry.sources.length ? ['', 'Sources:', ...entry.sources.map(source => `- ${source.source_role === 'web_grounding' ? source.title : `Our note: ${source.title}`} — ${source.url}`)] : []),
     ''
   ]));
   lines.push('Review this local export before sharing. It is not an expert-approved recommendation.');

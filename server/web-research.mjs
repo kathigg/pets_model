@@ -17,11 +17,15 @@ export function shouldResearchWeb({ message, topic = '', intent, hits = [], cont
   if (!canResearchWeb({ message, topic, intent, context })) return false;
   if (/\b(?:new to|beginner|getting started|start learning|what are (?:pets|privacy.enhancing technologies)|pet primer)\b/i.test(message)) return false;
   const question = normalizePetTerms(`${topic} ${message}`);
-  const definition = /^\s*(?:(?:can|could) you (?:please )?(?:explain|define)|what (?:is|are)|explain|define|tell me about)\b/i.test(message);
-  // The local synthetic-data notes cover pilots and risks, but not a definition.
-  // A lexical hit for that term must not stand in for a direct explanation.
-  if (definition && /\b(?:synthetic|fake) data\b/i.test(question) &&
-      !hits.some(hit => hit.document.tags?.includes('definition') && hit.document.tags?.includes('synthetic_data'))) return true;
+  const definition = /^\s*(?:(?:can|could) you (?:please )?explain what\b|define\b|what(?:'s| is| are)\s+(?!the (?:best practice|difference|main|benefits|risks|limits)\b|good examples\b|some examples\b))/i.test(message);
+  // A case study or risk note can mention the term without defining it.
+  // Require a directly relevant definition note; otherwise research a public source.
+  if (definition) {
+    const terms = new Set(tokens(question).filter(term => !GENERIC.has(term)));
+    const directDefinition = hits.some(hit => hit.document.tags?.includes('definition') &&
+      hit.matched?.some(term => terms.has(term)));
+    if (!directDefinition) return true;
+  }
   if (!hits.length && /\?|\b(?:what|how|explain|compare|define|tell me)\b/i.test(message)) return true;
   const explicit = /\b(?:search (?:the )?(?:web|internet|online)|look (?:it )?up online|browse|find (?:the )?(?:latest|current)|latest|current|recent|up.to.date)\b/i.test(message);
   const generalLaw = /\b(?:ferpa|gdpr|legislation|regulations?)\b/i.test(message)
