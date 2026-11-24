@@ -72,19 +72,16 @@ test('misspelled package names are normalized before web research', async () => 
   assert.equal(researched, 'whats the difference between synthpop and tidysynthesis');
 });
 
-test('a misspelled synthetic-data definition uses public web grounding', async () => {
-  let researched;
+test('a misspelled synthetic-data definition uses the specific public ICO definition without web search', async () => {
+  const model = recordingModel(ids => [{ text: 'Synthetic data are generated with a model of real data, but are not automatically anonymous.',
+    source_ids: [ids[0]] }]);
   const response = await answerWithRag({ message: 'can you explain what sythetic data is', intent: 'learn' },
-    { apiKey: 'test-key', fetchImpl: async () => { throw new Error('local draft should not run'); },
-      webResearch: async question => {
-        researched = question;
-        return { status: 'ok', segments: [{ text: 'Synthetic data are generated records that model selected patterns in source data.', source_ids: ['web-0'] }],
-          sources: [{ id: 'web-0', title: 'Public technical guidance', url: 'https://ico.org.uk/', source_role: 'web_grounding' }],
-          web_suggestion_html: '<a href="https://google.com/search?q=synthetic+data">Search</a>' };
-      } });
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl,
+      webResearch: async () => { throw new Error('A locally covered definition should not need Search'); } });
   assert.equal(response.status, 'ok');
-  assert.equal(researched, 'can you explain what synthetic data is');
-  assert.deepEqual(response.segments[0].source_ids, ['web-0']);
+  assert.equal(response.sources[0].id, 'ico-synthetic-definition');
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /can you explain what synthetic data is/);
+  assert.equal(model.calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'LOW');
 });
 
 test('public web follow-up receives the previous answer as context', async () => {

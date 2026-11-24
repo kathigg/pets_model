@@ -12,8 +12,8 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route('whats the difference between synhpop and tidy synethesis'), true);
   assert.equal(route('Compare synthpop and tidysynthesis'), true);
   assert.equal(route('What is synthpop?'), true);
-  assert.equal(route('can you explain what sythetic data is'), true);
-  assert.equal(route('what is synthetic data'), true);
+  assert.equal(route('can you explain what sythetic data is'), false);
+  assert.equal(route('what is synthetic data'), false);
   assert.equal(route('What is private set intersection?'), false);
   assert.equal(route('What is secure multiparty computation?'), false);
   assert.equal(route('What is homomorphic encryption?'), false);

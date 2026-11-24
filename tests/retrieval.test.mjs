@@ -87,6 +87,7 @@ test('common synthetic-data typo retrieves synthetic sources, not generic explan
   const hits = retrieve(index, 'can you explain what sythetic data is', { limit: 6 });
   assert.ok(hits.length > 0);
   assert.ok(hits.every(hit => hit.document.tags.includes('synthetic_data')));
+  assert.equal(hits[0].document.id, 'ico-synthetic-definition');
 });
 
 test('PET vocabulary tolerates close typos without rewriting unrelated words', () => {
