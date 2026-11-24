@@ -59,7 +59,7 @@ async function readLimitedBody(request) {
 
 /** Thin HTTP boundary shared by the authenticated Site and a public Worker. */
 export async function handleChatRequest(request, {
-  apiKey, accessTokenProvider, model, projectId, location, fetchImpl, reserveModelCall, reserveWebResearch, onUsage, answer = answerWithRag, requireIdentity = true,
+  apiKey, accessTokenProvider, model, projectId, location, fetchImpl, reserveModelCall, reserveWebResearch, onUsage, onOutcome, answer = answerWithRag, requireIdentity = true,
   rateKey, now = Date.now()
 } = {}) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
@@ -74,6 +74,12 @@ export async function handleChatRequest(request, {
   if (Number.isFinite(statedLength) && statedLength > MAX_BODY_BYTES) return json({ error: 'Message is too long.' }, 413);
 
   let input;
+  const startedAt = Date.now();
+  const report = result => {
+    try { onOutcome?.({ status: result.status, reason: result.reason || '', durationMs: Date.now() - startedAt }); }
+    catch { /* Diagnostic logging never changes the answer. */ }
+    return result;
+  };
   try {
     const body = await readLimitedBody(request);
     if (body === null) return json({ error: 'Message is too long.' }, 413);
@@ -98,8 +104,8 @@ export async function handleChatRequest(request, {
       profile: input.profile,
       context: input.context
     }, { apiKey, accessTokenProvider, model, projectId, location, fetchImpl, reserveModelCall, reserveWebResearch, onUsage });
-    return json(result);
+    return json(report(result));
   } catch {
-    return json({ status: 'unavailable', segments: [], sources: [], reason: 'server_error' }, 503);
+    return json(report({ status: 'unavailable', segments: [], sources: [], reason: 'server_error' }), 503);
   }
 }

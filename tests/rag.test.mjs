@@ -59,6 +59,23 @@ test('package comparison uses web research instead of a frozen package summary',
   assert.deepEqual(response.segments[0].source_ids, ['web-0']);
 });
 
+test('current PET organization questions research public sources instead of stale pilot notes', async () => {
+  let searched;
+  const response = await answerWithRag({
+    message: 'Who are researchers or organizations currently working on developing new PETs techniques?', intent: 'learn'
+  }, { apiKey: 'test-key',
+    fetchImpl: async () => { throw new Error('Static corpus answer should not run'); },
+    webResearch: async question => {
+      searched = question;
+      return { status: 'ok', segments: [{ text: 'NIST publishes current technical PET guidance.', source_ids: ['web-0'] }],
+        sources: [{ id: 'web-0', title: 'NIST', url: 'https://www.nist.gov/', source_role: 'web_grounding' }],
+        web_suggestion_html: '<a href="https://google.com/search">Search</a>' };
+    }
+  });
+  assert.equal(response.status, 'ok');
+  assert.match(searched, /currently working/);
+});
+
 test('misspelled package names are normalized before web research', async () => {
   let researched;
   const response = await answerWithRag({ message: 'whats the difference between synhpop and tidy synethesis', intent: 'learn' },
@@ -195,6 +212,25 @@ test('straightforward PET explanations use low effort while applied comparisons 
     { apiKey: 'test-key', fetchImpl: applied.fetchImpl });
   assert.equal(appliedReply.status, 'ok');
   assert.equal(applied.calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');
+});
+
+test('researcher access options use several relevant models and a careful answer', async () => {
+  const model = recordingModel(ids => [
+    { text: 'A controlled query or enclave can limit direct access to SLDS rows.', source_ids: [ids[0]] },
+    { text: 'Synthetic data can support development, but privacy and utility need testing.', source_ids: [ids[1], ids[2]] },
+    { text: 'Joint computation can leave inputs with their holders.', source_ids: [ids[3]] },
+    { text: 'Education-record releases still need an authorized review.', source_ids: [ids[5]] }
+  ]);
+  const response = await answerWithRag({
+    message: 'I don’t want to share actual SLDS data with university researchers. What are my options?', intent: 'learn'
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'ok');
+  assert.deepEqual(response.sources.map(source => source.id), [
+    'nist-crypto-release-models', 'ico-synthetic-definition', 'ico-synthetic-risks',
+    'ico-smpc-definition', 'ed-ferpa-deidentification-standard'
+  ]);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /controlled access or a query interface/);
+  assert.equal(model.calls[0].body.generationConfig.thinkingConfig.thinkingLevel, 'MEDIUM');
 });
 
 test('Nebraska answer receives concrete public report passages', async () => {
@@ -507,6 +543,23 @@ test('no matching PET source uses conversational Gemini without citations', asyn
   assert.equal(calls, 1);
 });
 
+test('an unrelated lesson request uses general Gemini rather than an irrelevant PET pilot', async () => {
+  const model = recordingModel(ids => {
+    assert.deepEqual(ids, []);
+    return [
+      { text: 'Begin with the colonies and the grievances that led to independence.', source_ids: [] },
+      { text: 'Use one primary source and ask students to compare perspectives.', source_ids: [] },
+      { text: 'Close with a short evidence-based discussion.', source_ids: [] }
+    ];
+  });
+  const response = await answerWithRag({ message: 'I want to create my next lesson on the US Revolution', intent: 'learn' },
+    { apiKey: 'test-key', fetchImpl: model.fetchImpl });
+  assert.equal(response.status, 'chat');
+  assert.equal(response.segments.length, 3);
+  assert.deepEqual(response.sources, []);
+  assert.match(model.calls[0].body.contents[0].parts[0].text, /For an unrelated task such as lesson planning/);
+});
+
 test('daily model budget is reserved only after evidence and review gates, and fails closed', async () => {
   const model = recordingModel(ids => [{ text: 'A cited answer.', source_ids: [ids[0]] }]);
   let reservations = 0;
@@ -651,6 +704,19 @@ test('provider failure returns an unavailable response without provider details'
   });
   assert.equal(response.status, 'unavailable');
   assert.doesNotMatch(JSON.stringify(response), /secret provider detail/);
+});
+
+test('provider failures expose safe diagnostic categories without question text', async () => {
+  const limited = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' }, {
+    apiKey: 'test-key', fetchImpl: async () => Response.json({ error: 'private provider detail' }, { status: 429 })
+  });
+  assert.equal(limited.reason, 'provider_rate_limited');
+  assert.equal(JSON.stringify(limited).includes('private provider detail'), false);
+  const timeout = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' }, {
+    apiKey: 'test-key', fetchImpl: async () => { const error = new Error('private detail'); error.name = 'AbortError'; throw error; }
+  });
+  assert.equal(timeout.reason, 'provider_timeout');
+  assert.equal(JSON.stringify(timeout).includes('private detail'), false);
 });
 
 test('service identity is requested for conversation and grounded answers after privacy review gates', async () => {

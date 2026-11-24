@@ -27,7 +27,7 @@ export function shouldResearchWeb({ message, topic = '', intent, hits = [], cont
     if (!directDefinition) return true;
   }
   if (!hits.length && /\?|\b(?:what|how|explain|compare|define|tell me)\b/i.test(message)) return true;
-  const explicit = /\b(?:search (?:the )?(?:web|internet|online)|look (?:it )?up online|browse|find (?:the )?(?:latest|current)|latest|current|recent|up.to.date)\b/i.test(message);
+  const explicit = /\b(?:search (?:the )?(?:web|internet|online)|look (?:it )?up online|browse|find (?:the )?(?:latest|current)|latest|current|currently|recent|up.to.date)\b/i.test(message);
   const generalLaw = /\b(?:ferpa|gdpr|legislation|regulations?)\b/i.test(message)
     && /^\s*(?:what|how|explain|describe|summari[sz]e)\b/i.test(message);
   const comparison = /\b(?:difference|compare|versus|vs\.?|between)\b/i.test(message);
@@ -128,7 +128,7 @@ export async function generateWebGroundedAnswer(question, {
         generationConfig: { thinkingConfig: { thinkingLevel: 'LOW' }, maxOutputTokens: 4096 }
       })
     });
-    if (!response.ok) throw new Error('Grounded model request failed');
+    if (!response.ok) throw new Error(`Grounded model HTTP ${response.status}`);
     const body = await response.json();
     const candidate = body?.candidates?.[0];
     if (candidate?.finishReason !== 'STOP') throw new Error('Grounded response incomplete');

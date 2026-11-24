@@ -189,7 +189,8 @@ export function createCloudRunServer({
           rateKey: 'public-cloud-run',
           reserveModelCall,
           reserveWebResearch,
-          onUsage: usage => console.info(JSON.stringify({ event: 'gemini_usage', ...usage }))
+          onUsage: usage => console.info(JSON.stringify({ event: 'gemini_usage', ...usage })),
+          onOutcome: outcome => console.info(JSON.stringify({ event: 'chat_outcome', ...outcome }))
         });
         await sendWebResponse(response, webResponse);
       } else if (url.pathname.startsWith('/api/')) {

@@ -36,14 +36,16 @@ test('retrieval finds private set intersection evidence for cross-holder linkage
   assert.ok(hits.some(x => x.document.tags.includes('psi')));
 });
 
-test('MDI sources receive a small relevance boost while FERPA favors legal guidance', () => {
+test('NIST ranks higher, Education Department lower, and FERPA still favors legal guidance', () => {
   const sameText = 'education workforce linkage pilot';
   const comparison = createIndex([
-    { id: 'other', title: sameText, text: sameText, tags: [], url: 'https://www.nist.gov/example', source_role: 'case_study' },
-    { id: 'mdi', title: sameText, text: sameText, tags: [], url: 'https://mdi.georgetown.edu/pets/example/', source_role: 'case_study' }
+    { id: 'other', title: sameText, text: sameText, tags: [], url: 'https://example.org/example', source_role: 'case_study' },
+    { id: 'mdi', title: sameText, text: sameText, tags: [], url: 'https://mdi.georgetown.edu/pets/example/', source_role: 'case_study' },
+    { id: 'nist', title: sameText, text: sameText, tags: [], url: 'https://www.nist.gov/example', source_role: 'case_study' },
+    { id: 'education', title: sameText, text: sameText, tags: [], url: 'https://studentprivacy.ed.gov/example', source_role: 'case_study' }
   ]);
-  const boosted = retrieve(comparison, sameText, { limit: 2 });
-  assert.equal(boosted[0].document.id, 'mdi');
+  const boosted = retrieve(comparison, sameText, { limit: 4 });
+  assert.deepEqual(boosted.map(hit => hit.document.id), ['nist', 'mdi', 'other', 'education']);
   assert.ok(boosted[0].score / boosted[1].score < 1.1);
 
   const project = retrieve(index, 'What privacy-enhancing technologies has MDI tested with education agencies?', { limit: 3 });
@@ -57,6 +59,7 @@ test('MDI sources receive a small relevance boost while FERPA favors legal guida
 test('unrelated query has no fabricated evidence', () => {
   assert.deepEqual(retrieve(index, 'volcanoes astrophysics xylophone', { limit: 5 }), []);
   assert.deepEqual(retrieve(index, 'What are the cafeteria menus in schools?', { limit: 5 }), []);
+  assert.deepEqual(retrieve(index, 'look on the internet for ur mom', { limit: 5 }), []);
 });
 
 test('fuzzy linkage evidence supports approximate matching rather than exact PSI', () => {

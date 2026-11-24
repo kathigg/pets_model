@@ -41,6 +41,7 @@ function asksToActOnProtectedRecords(message) {
 
 function answerEffort(intent, message, topic = '') {
   if (intent !== 'learn') return 'MEDIUM';
+  if (/\b(?:i|we|our|my)\b/i.test(message) && /\b(?:data|records?|dataset|slds|agenc\w*)\b/i.test(message)) return 'MEDIUM';
   return /\b(?:compare|comparison|difference|versus|tradeoffs?|best practice|legislation|legal|ferpa|gdpr|compliance|regulat\w*|policy|policies|recommend\w*|specific|pilot|case study|limitations?)\b/i
     .test(`${topic} ${message}`) ? 'MEDIUM' : 'LOW';
 }
@@ -54,6 +55,19 @@ function evidenceForTask(intent, message, assessment, context, topic = '') {
     const codes = [...assessment.primary, ...assessment.complementary].map(item => item.code);
     const curated = evidenceFor(index, message, codes, 5);
     if (curated.length) return curated;
+  }
+  const sharingAlternatives = intent === 'learn' &&
+    /\b(?:options?|alternatives?|ways?|how)\b/i.test(message) &&
+    /\b(?:shar\w*|access|provid\w*|collaborat\w*|research\w*)\b/i.test(message) &&
+    /\b(?:not|without|avoid|don.t|won.t)\b/i.test(message) &&
+    /\b(?:data|records?|research\w*|slds)\b/i.test(message);
+  if (sharingAlternatives) {
+    const ids = ['nist-crypto-release-models', 'ico-synthetic-definition', 'ico-synthetic-risks',
+      'ico-smpc-definition', 'mdi-adoption-context',
+      /\b(?:student|school|education|slds)\b/i.test(message)
+        ? 'ed-ferpa-deidentification-standard' : 'uk-governance-with-pets'];
+    return ids.map(id => index.docs.find(document => document.id === id)).filter(Boolean)
+      .map(document => ({ document, score: 1, matched: ['sharing_alternative'] }));
   }
   const lastUserTopic = context.filter(turn => turn.role === 'user').at(-1)?.text || '';
   const lastAssistant = context.filter(turn => turn.role === 'assistant').at(-1)?.text || '';
@@ -143,6 +157,7 @@ function taskPrompt({ message, intent, profile, context, assessment, hits, topic
     `Write 1-7 plain-language segments. Each segment should be one readable paragraph with complete sentences and normal punctuation. Start a new segment when moving to a different point; do not produce one unbroken block. A simple question may take one or two sentences. For a substantive PET question, give a complete explanation, usually three to five concise paragraphs (roughly 180-350 words when the evidence supports it): define the concept or answer the question, explain how it works or applies, discuss practical limits, and give a useful example or next step when relevant. A detailed applied question may use up to seven paragraphs. Do not stop after two paragraphs or pad a simple answer. Every segment must cite the exact IDs of the public evidence supporting its claims. Do not invent facts, citations, permission, safety guarantees, or a best PET. If evidence is narrow, state its limits.\n` +
     `Match the visitor's level and stage. For a newcomer, define terms before technical detail. For a specialist, explain mechanisms, assumptions, failure modes, and evidence limits. For a policy question, explain the general framework from the cited guidance without giving a project-specific legal approval. Do not use the same checklist or decision-tree template for every answer. When a public MDI pilot directly illustrates an applied question, answer the question first, then optionally add one or two brief, clearly labeled "Similar MDI use case" paragraphs with the tested setting, documented result or limitation, and its citation. A third example is useful only when it shows a materially different approach or limitation. Skip pilot examples for simple definitions or weak matches. Never let a pilot replace the answer or become a universal prescription.\n` +
     `For an informational question (intent learn), answer it directly. Explain the concept, practical distinction, or evidence the visitor asked about; do not turn it into a PET selection exercise or ask for their dataset. If asked about MDI resources, describe only what the public source documents support. These source summaries are drafts with no recorded expert approval, so never call them expert-reviewed. For a use case recommendation (intent choose), the interface already shows the proposed approach. Add two or three cited paragraphs with material limitations, tradeoffs, or next checks when useful; a complex case can need four. Do not repeat the approach. If the case facts say the data are public or internal rather than protected, do not discuss FERPA or student-record disclosure unless asked. When separate_mdi_case_card is true, the interface separately shows one short, linked public MDI example; do not repeat that pilot in the main advice unless the visitor asks for more detail. MDI's public PET pages provide project context, not an automatic answer to the visitor's case.\n` +
+    `When someone asks for options to work with researchers or partners without handing over original records, compare the materially different models supported by the evidence: controlled access or a query interface, a purpose-tested synthetic proxy, and joint computation that leaves inputs with their holders. Explain what each option still exposes and what review is needed. Lead with the options, not a resource directory, and do not imply that any one choice is authorized for their case.\n` +
     `If asked about linkage variables across agencies, explain that no single field is best for every case. Start with the matching purpose and assess identifier completeness, error rates, and distinctiveness; distinguish exact from approximate matching when useful. If the supplied evidence supports it, Arkansas and D.C. can illustrate different tested field combinations and their limits after the general explanation. The public NYSED clean-room overview establishes a multi-agency pilot but names no matching variables or measured outcome, so do not invent either.\n` +
     `When Nebraska NSWERS is relevant and its report passages are supplied, go beyond naming the pilot: explain that NSWERS and the Urban Institute began with separate synthetic datasets for high-school graduation and time to employment; early checks of individual variables looked promising, while preserving relationships between outcomes and predictors was a more important evaluation target. Mention linked-table preparation or missing/high-cardinality values only if relevant and cited. Distinguish planned evaluation from completed results. Do not imply the report proves all synthetic releases are safe.\n` +
     `When explicitly asked for examples, give two or three compact MDI public cases when evidence supports them. For each, say who partnered, what was tested, and a documented result or limitation. Do not present a public overview as a full pilot report or invent results it does not report. When asked for a resource, name one or two specific documents from PUBLIC_EVIDENCE and explain briefly why they fit the current topic. The interface renders their titled links. If comparing named software packages, compare those packages directly using their own documentation; do not substitute a general synthetic-data overview.\n` +
@@ -187,6 +202,16 @@ function saysSourcesCannotAnswer(answer) {
   const opening = answer?.segments?.[0]?.text || '';
   return /\b(?:provided|supplied|available|loaded)\b.{0,50}\b(?:sources?|resources?|documents?|notes?)\b.{0,70}\b(?:do not|does not|don't|cannot|can't|lack)\b.{0,20}\b(?:define|cover|answer|explain)\b/i.test(opening)
     || /\b(?:cannot|can't|could not|couldn't)\b.{0,40}\b(?:find|verify)\b.{0,60}\b(?:in|from)\b.{0,20}\b(?:sources?|resources?|documents?)\b/i.test(opening);
+}
+
+function modelFailureReason(error) {
+  if (error?.name === 'AbortError') return 'provider_timeout';
+  if (/\bHTTP 429\b/.test(error?.message || '')) return 'provider_rate_limited';
+  if (/\bHTTP (?:401|403)\b/.test(error?.message || '')) return 'provider_permission';
+  if (/\bHTTP 5\d\d\b/.test(error?.message || '')) return 'provider_unavailable';
+  if (/response incomplete/i.test(error?.message || '')) return 'provider_incomplete';
+  if (error instanceof SyntaxError) return 'provider_parse_error';
+  return 'model_error';
 }
 
 /** Public-source RAG with deterministic privacy gates and validated citations. */
@@ -240,7 +265,7 @@ export async function answerWithRag(input, { apiKey, accessTokenProvider, model,
     }
     const conversation = !hits.length;
     const prompt = conversation
-      ? `You are PETs Model, a friendly PET-informed chatbot. Respond to the user's current need, not with a recap of past studies. Use recent conversation for context. ${intakeQuestion ? `This is an incomplete use case. Briefly acknowledge what the user wants without recommending a PET or asking any question. The interface will ask its one follow-up separately. Do not ask for details already in known_case_facts.` : ''} ${socialReply ? `This is simple conversation. Your reply should follow this direction: ${socialReply}` : ''} Do not mention pilots, reports, or prior projects in casual conversation or intake. If a PET-specific fact is requested without public evidence, say you cannot verify it from the loaded sources. Do not make legal determinations, ask for real records, or invent citations. Keep replies short. Return JSON with 1-3 segments, each with text and an empty source_ids array.\n${JSON.stringify({ message, recent_context: context, known_case_facts: profile })}`
+      ? `You are PETs Model, a friendly chatbot with PET expertise. Respond to the user's current need, not with a recap of past studies. Use recent conversation for context. ${intakeQuestion ? `This is an incomplete use case. Briefly acknowledge what the user wants without recommending a PET or asking any question. The interface will ask its one follow-up separately. Do not ask for details already in known_case_facts.` : ''} ${socialReply ? `This is simple conversation. Your reply should follow this direction: ${socialReply}` : ''} For a substantive general question outside the loaded PET sources, answer from general knowledge in two to four useful paragraphs when needed, without pretending a PET source supports it. For an unrelated task such as lesson planning, provide a usable starting point. If a PET-specific fact is requested without public evidence, say what you cannot verify rather than making it up. Do not mention pilots, reports, or prior projects in casual conversation or intake. Do not make legal determinations, ask for real records, or invent citations. Keep only greetings and intake acknowledgments short. Return JSON with 1-5 segments, each with text and an empty source_ids array.\n${JSON.stringify({ message, recent_context: context, known_case_facts: profile })}`
       : taskPrompt({ message, intent, profile, context, assessment, hits, topic });
     const draft = await generateGeminiDraft(
       prompt,
@@ -269,7 +294,7 @@ export async function answerWithRag(input, { apiKey, accessTokenProvider, model,
     }
     return checked ||
       result('unavailable', 'I could not verify the answer.', conversation ? 'invalid_answer' : 'invalid_citations');
-  } catch {
-    return result('unavailable', 'The model is temporarily unavailable.', 'model_error');
+  } catch (error) {
+    return result('unavailable', 'The model is temporarily unavailable.', modelFailureReason(error));
   }
 }

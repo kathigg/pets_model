@@ -1089,5 +1089,61 @@
     "drafted_at": "2026-11-13",
     "review_status": "draft",
     "reviewed_at": null
+  },
+  {
+    "id": "adh-pprl2-award",
+    "title": "NSF NCSES award: open-source federal record linkage",
+    "url": "https://www.americasdatahub.org/award-pprl2/",
+    "publisher": "America's DataHub Consortium",
+    "year": 2023,
+    "tags": ["nsf", "ncses", "americas_datahub", "pprl", "linkage", "federal", "secure_environment", "award"],
+    "text": "An NSF NCSES-sponsored America’s DataHub award lists NORC at the University of Chicago as performer and Datavant as partner for a federal PPRL demonstration. Its stated plan was to develop a data-sharing agreement, use an open-source record-linkage tool, and analyze the linked file in a secure environment. The award page describes the project objective, not a measured linkage result or a universal method.",
+    "jurisdiction": "US",
+    "source_role": "institutional_context",
+    "drafted_at": "2026-11-24",
+    "review_status": "draft",
+    "reviewed_at": null
+  },
+  {
+    "id": "adh-synthetic-award",
+    "title": "NSF NCSES award: large-scale synthetic data",
+    "url": "https://www.americasdatahub.org/dg-rwd-24/",
+    "publisher": "America's DataHub Consortium",
+    "year": 2024,
+    "tags": ["nsf", "ncses", "americas_datahub", "synthetic_data", "privacy_risk", "utility", "award"],
+    "text": "An NSF NCSES-sponsored America’s DataHub award names Westat as performer and Tumult Labs as partner in a synthetic-data study using very large datasets in a secure compute environment. The stated goal was a framework for a toolkit covering generation methods, privacy-risk assessment, and data utility. The award describes intended work; it does not establish that the generated data are safe to release or report a measured result.",
+    "jurisdiction": "US",
+    "source_role": "institutional_context",
+    "drafted_at": "2026-11-24",
+    "review_status": "draft",
+    "reviewed_at": null
+  },
+  {
+    "id": "adh-smpc-award",
+    "title": "NSF NCSES award: secure multiparty computation",
+    "url": "https://www.americasdatahub.org/rfs-smpc-25/",
+    "publisher": "America's DataHub Consortium",
+    "year": 2025,
+    "tags": ["nsf", "ncses", "americas_datahub", "smpc", "mpc", "statistics", "award"],
+    "text": "An NSF NCSES-sponsored America’s DataHub award names Stealth Software Technologies as performer for a secure multiparty computation case study, with MRAIA, Strategix, Urban Institute, and Western Institute for Veterans Research as partners. Its stated objective is to integrate data and publish statistics after agreements and acquisition protocols are established. The award page states an objective, not a verified implementation result.",
+    "jurisdiction": "US",
+    "source_role": "institutional_context",
+    "drafted_at": "2026-11-24",
+    "review_status": "draft",
+    "reviewed_at": null
+  },
+  {
+    "id": "ieee-he-overview",
+    "title": "IEEE Digital Privacy: homomorphic encryption overview",
+    "url": "https://digitalprivacy.ieee.org/publications/topics/what-is-homomorphic-encryption/",
+    "publisher": "IEEE Digital Privacy",
+    "year": null,
+    "tags": ["homomorphic_encryption", "fhe", "encrypted_computation", "definition", "technical_guidance"],
+    "text": "IEEE Digital Privacy explains that homomorphic encryption permits operations on ciphertext without first decrypting the data. Its overview distinguishes partial, somewhat, and fully homomorphic schemes, and notes that fully homomorphic computation can impose substantial performance and implementation costs. This article is an educational overview, not an IEEE standard or a claim that FHE protects the decrypted output from disclosure.",
+    "jurisdiction": "international",
+    "source_role": "technical_guidance",
+    "drafted_at": "2026-11-24",
+    "review_status": "draft",
+    "reviewed_at": null
   }
 ]

@@ -69,7 +69,7 @@ export async function generateGeminiDraft(prompt, sourceIds, {
       body: JSON.stringify(request),
       signal: controller.signal
     });
-    if (!response.ok) throw new Error('Model request failed');
+    if (!response.ok) throw new Error(`Model HTTP ${response.status}`);
     const result = await response.json();
     if (typeof onUsage === 'function' && result?.usageMetadata) {
       const counts = Object.fromEntries(

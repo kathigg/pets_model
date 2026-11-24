@@ -19,7 +19,7 @@ const el = (tag, className = '', text) => {
 const state = {
   index: createIndex([]), profile: {}, evidence: [], transcript: [],
   mode: 'learn', sourceStatus: 'loading', lastTopicQuery: '', pendingQuestion: null,
-  busy: false, turn: 0, controller: null, apiUnavailable: false, aiNoticeShown: false
+  busy: false, turn: 0, controller: null, apiUnavailable: false
 };
 state.webSuggestionHtml = '';
 const messages = $('#messages');
@@ -395,12 +395,12 @@ async function requestModel(intent, query, topic = '') {
       signal: controller.signal
     });
     if (response.status === 404 || response.status === 405) state.apiUnavailable = true;
-    if (!response.ok) return { unavailable: true };
+    if (!response.ok) return { unavailable: true, reason: response.status === 429 ? 'rate_limited' : 'http_error' };
     const payload = await response.json();
     if (payload?.status === 'review') return { review: true };
-    if (payload?.status === 'unavailable') return { unavailable: true };
+    if (payload?.status === 'unavailable') return { unavailable: true, reason: payload.reason };
     if (payload?.status === 'insufficient') return null;
-    return checkedModelAnswer(payload) || { unavailable: true };
+    return checkedModelAnswer(payload) || { unavailable: true, reason: 'invalid_response' };
   } catch {
     return { unavailable: true };
   } finally {
@@ -410,10 +410,23 @@ async function requestModel(intent, query, topic = '') {
 }
 
 function localAnswer(answer, unavailable = false) {
-  if (unavailable && !state.aiNoticeShown && answer instanceof HTMLElement) {
+  if (unavailable && answer instanceof HTMLElement) {
     answer.append(el('p', 'ai-note', 'AI is unavailable. Showing public sources.'));
-    state.aiNoticeShown = true;
   }
+  return answer;
+}
+
+function modelFailureMessage(reason) {
+  const answer = el('div', 'answer');
+  const message = reason === 'daily_limit' || reason === 'web_daily_limit'
+    ? 'Gemini has reached its daily limit. Please try again tomorrow.'
+    : reason === 'rate_limited'
+      ? 'Too many requests right now. Please wait a few minutes and send your message again.'
+      : 'I could not complete a reliable answer. Please send your message again.';
+  answer.append(el('p', 'answer-lead answer-warning', message));
+  state.evidence = [];
+  state.webSuggestionHtml = '';
+  state.pendingQuestion = null;
   return answer;
 }
 
@@ -442,6 +455,7 @@ async function modelTurn(intent, query, fallback, title = '', topic = '') {
   updateControls();
   if (model?.review) addMessage('assistant', legalMessage(query));
   else if (model && !model.unavailable) addMessage('assistant', intent === 'choose' && model.kind !== 'chat' ? fallback(model) : modelMessage(model, model.kind === 'chat' ? '' : title, query));
+  else if (model?.unavailable && !state.apiUnavailable) addMessage('assistant', modelFailureMessage(model.reason));
   else addMessage('assistant', localAnswer(fallback(), Boolean(model?.unavailable)));
   $('#prompt').focus();
 }
@@ -787,7 +801,6 @@ function reset({ initial = false } = {}) {
   state.lastTopicQuery = '';
   state.pendingQuestion = null;
   state.mode = 'learn';
-  state.aiNoticeShown = false;
   if (!initial) state.chatId = crypto.randomUUID();
   messages.replaceChildren();
   document.body.classList.remove('has-messages');

@@ -73,7 +73,12 @@ function frequencies(xs) {
   return m;
 }
 
-function projectSourceWeight(doc) {
+function sourceWeight(doc) {
+  let host = '';
+  try { host = new URL(doc.url).hostname; } catch { /* Invalid URLs are already excluded. */ }
+  if (['www.nist.gov', 'csrc.nist.gov', 'nvlpubs.nist.gov'].includes(host)) return 1.14;
+  if (host === 'studentprivacy.ed.gov') return 0.8;
+  if (host === 'digitalprivacy.ieee.org') return 1.04;
   const isMdiPets = [doc.url, doc.public_landing_url].some(value => {
     if (!value) return false;
     try {
@@ -94,7 +99,7 @@ export function createIndex(documents) {
     const body = tokens(d.text);
     const title = tokens(d.title || '');
     const tags = tokens((d.tags || []).join(' '));
-    return { body: frequencies(body), title: frequencies(title), tags: frequencies(tags), length: Math.max(1, body.length), projectWeight: projectSourceWeight(d) };
+    return { body: frequencies(body), title: frequencies(title), tags: frequencies(tags), length: Math.max(1, body.length), sourceWeight: sourceWeight(d) };
   });
   const df = new Map();
   for (const vector of vectors) {
@@ -113,6 +118,7 @@ export function retrieve(index, query, { limit = 5, tags = [] } = {}) {
   const N = index.docs.length;
   const broad = new Set(['education', 'school', 'student']);
   const ferpaQuestion = /\bferpa\b/i.test(query);
+  const definitionQuestion = /\b(?:what is|what are|define|definition|explain what)\b/i.test(query);
   const scored = index.docs.map((doc, i) => {
     const v = index.vectors[i];
     let score = 0;
@@ -130,9 +136,18 @@ export function retrieve(index, query, { limit = 5, tags = [] } = {}) {
       if (boost.has(term)) score += idf * 0.35;
     }
     if (ferpaQuestion && doc.jurisdiction === 'US' && doc.source_role === 'legal_guidance') score *= 1.7;
-    if (!ferpaQuestion) score *= v.projectWeight;
+    if (!ferpaQuestion) score *= v.sourceWeight;
+    if (definitionQuestion && doc.tags?.includes('definition')) score *= 1.25;
     return { document: doc, score, matched };
-  }).filter(x => x.score > 0 && x.matched.some(term => !broad.has(term)));
+  }).filter(x => {
+    if (x.score <= 0 || !x.matched.some(term => !broad.has(term))) return false;
+    if (q.length < 3 || x.matched.filter(term => !broad.has(term)).length >= 2) return true;
+    // One exact named topic in a source title or tag is useful; one incidental
+    // body word such as "look" in an unrelated question is not.
+    const named = new Set(tokens(`${x.document.title} ${(x.document.tags || []).join(' ')}`));
+    const generic = new Set(['look', 'internet', 'new', 'current', 'recent', 'option', 'work', 'want', 'share', 'researcher', 'organization']);
+    return x.matched.some(term => named.has(term) && !generic.has(term) && !broad.has(term));
+  });
   scored.sort((a, b) => b.score - a.score || a.document.id.localeCompare(b.document.id));
   return scored.slice(0, Math.max(0, Math.min(20, limit)));
 }
@@ -160,7 +175,7 @@ export function evidenceFor(index, query, petCodes = [], limit = 5) {
     const examples = petCodes.flatMap(code => (PETS[code]?.sourceIds || [])
       .map(id => ({ code, document: index.docs.find(d => d.id === id) }))
       .filter(({ document }) => document && !seen.has(document.id) &&
-        projectSourceWeight(document) > 1 && document.source_role === 'case_study' && relevance.has(document.id) &&
+        sourceWeight(document) > 1 && document.source_role === 'case_study' && relevance.has(document.id) &&
         (!approximate || document.tags.includes('fuzzy'))));
     examples.sort((a, b) => relevance.get(b.document.id) - relevance.get(a.document.id));
     if (examples[0]) {
