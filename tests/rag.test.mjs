@@ -559,6 +559,22 @@ test('no matching PET source uses conversational Gemini without citations', asyn
   assert.equal(calls, 1);
 });
 
+test('a new casual question does not cite the previous PET topic', async () => {
+  const model = recordingModel(ids => {
+    assert.deepEqual(ids, []);
+    return [{ text: 'I do not have a mother; I am an AI assistant.', source_ids: [] }];
+  });
+  const response = await answerWithRag({
+    message: "what's ur mom", intent: 'learn',
+    context: [{ role: 'user', text: 'How do agencies assess linkage variables?' },
+      { role: 'assistant', text: 'Assess missing identifiers and false links.' }]
+  }, { apiKey: 'test-key', fetchImpl: model.fetchImpl,
+    webResearch: async () => { throw new Error('Casual chat should not be sent to Search'); } });
+  assert.equal(response.status, 'chat');
+  assert.deepEqual(response.sources, []);
+  assert.doesNotMatch(model.calls[0].body.contents[0].parts[0].text, /PUBLIC_EVIDENCE/);
+});
+
 test('an unrelated lesson request uses general Gemini rather than an irrelevant PET pilot', async () => {
   const model = recordingModel(ids => {
     assert.deepEqual(ids, []);

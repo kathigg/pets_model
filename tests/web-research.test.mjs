@@ -20,6 +20,8 @@ test('web research handles software comparisons and unfamiliar PET terms, not ro
   assert.equal(route('What is pseudonymization?'), true);
   assert.equal(route('What is the best practice linkage variable in cross agency?'), false);
   assert.equal(route('What is k-anoymity?'), true);
+  assert.equal(route("what's ur mom"), false);
+  assert.equal(route('can you search the internet to see what papaparse is?'), true);
   assert.equal(route('What is differential privacy?'), false);
   assert.equal(route('What is the latest synthpop release?'), true);
   assert.equal(route('What is the difference between OpenDP and SmartNoise software?'), true);
@@ -75,6 +77,7 @@ test('grounded Vertex call returns only text and links backed by grounding metad
   assert.equal(answer.web_suggestion_html.includes('<style>'), true);
   assert.deepEqual(request.body.tools, [{ googleSearch: {} }]);
   assert.match(request.body.contents[0].parts[0].text, /Match the visitor's level/);
+  assert.match(request.body.contents[0].parts[0].text, /Synthetic data are not automatically anonymous or safe to release/);
   assert.match(request.body.contents[0].parts[0].text, /Prior assistant answer, for follow-up context only and not as evidence/);
   assert.equal(request.body.generationConfig.responseMimeType, undefined);
   assert.equal(request.headers.authorization, 'Bearer test-access-token');

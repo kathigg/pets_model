@@ -14,6 +14,9 @@ export function conversationalReply(text) {
   if (/^(thanks|thank you|thank you so much|thx)$/.test(message)) {
     return 'You’re welcome. What else would you like to explore?';
   }
+  if (/^(?:how are you|tell me a joke|what(?:'s| is) (?:your|ur) (?:mom|mother|dad|father|family))$/.test(message)) {
+    return 'Treat this as casual conversation. Reply naturally and briefly without steering back to PETs or citing a prior topic.';
+  }
   if (/^(?:do you have|do u have|is there|who is|can you be) (?:a |the |your )?privacy (?:or legal )?reviewer$/.test(message)) {
     return 'I can explain privacy questions, but I cannot approve a data-sharing arrangement. Your organization needs to identify its authorized privacy or legal reviewer.';
   }
