@@ -185,7 +185,7 @@ test('linkage-variable advice can cite relevant public pilots after general guid
   assert.match(prompt, /Skip pilot examples for simple definitions or weak matches/);
 });
 
-test('a nuanced PET explanation can use four cited paragraphs when needed', async () => {
+test('a nuanced PET explanation groups consecutive cited sentences into paragraphs', async () => {
   const model = recordingModel(ids => [
     { text: 'First, define the matching purpose.', source_ids: [ids[0]] },
     { text: 'Then assess missing values in shared fields.', source_ids: [ids[0]] },
@@ -196,6 +196,7 @@ test('a nuanced PET explanation can use four cited paragraphs when needed', asyn
     { apiKey: 'test-key', fetchImpl: model.fetchImpl });
   assert.equal(response.status, 'ok');
   assert.equal(response.segments.length, 4);
+  assert.deepEqual(response.segments.map(segment => segment.paragraph), [1, 1, 1, 2]);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a substantive PET question, give a complete explanation/);
   assert.match(model.calls[0].body.contents[0].parts[0].text, /For a specialist, explain mechanisms, assumptions, failure modes/);
 });
@@ -722,6 +723,11 @@ test('provider failure returns an unavailable response without provider details'
 });
 
 test('provider failures expose safe diagnostic categories without question text', async () => {
+  const invalid = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' }, {
+    apiKey: 'test-key', fetchImpl: async () => Response.json({ error: 'private provider detail' }, { status: 400 })
+  });
+  assert.equal(invalid.reason, 'provider_invalid_request');
+  assert.equal(JSON.stringify(invalid).includes('private provider detail'), false);
   const limited = await answerWithRag({ message: 'What is differential privacy?', intent: 'learn' }, {
     apiKey: 'test-key', fetchImpl: async () => Response.json({ error: 'private provider detail' }, { status: 429 })
   });

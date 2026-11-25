@@ -12,8 +12,6 @@ function responseSchema(sourceIds) {
         items: {
           type: 'OBJECT',
           properties: {
-            ...(grounded ? { paragraph: { type: 'INTEGER', minimum: 1, maximum: 7,
-              description: 'Paragraph group number. Use the same number for consecutive sentences in one paragraph.' } } : {}),
             text: { type: 'STRING', description: grounded ? 'One complete factual sentence. Put its public source IDs in source_ids.' : 'One plain-language answer segment; explain complex points fully.' },
             source_ids: {
               type: 'ARRAY', minItems: grounded ? 1 : 0, maxItems: grounded ? 3 : 0,
@@ -21,8 +19,8 @@ function responseSchema(sourceIds) {
               items: grounded ? { type: 'STRING', format: 'enum', enum: sourceIds } : { type: 'STRING' }
             }
           },
-          propertyOrdering: grounded ? ['paragraph', 'text', 'source_ids'] : ['text', 'source_ids'],
-          required: grounded ? ['paragraph', 'text', 'source_ids'] : ['text', 'source_ids']
+          propertyOrdering: ['text', 'source_ids'],
+          required: ['text', 'source_ids']
         }
       }
     },
